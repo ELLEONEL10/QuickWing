@@ -1,0 +1,19 @@
+# ---- Python backend ----
+backend/.venv/
+backend/__pycache__/
+backend/env/
+*.pyc
+*.pyo
+*.pyd
+*.db
+# ---- Node frontend ----
+frontend/node_modules/
+frontend/.next/
+frontend/.turbo/
+# ---- Env files & secrets ----
+*.env
+*.env.local
+*.env.production
+# ---- OS cruft ----
+.DS_Store
+Thumbs.db
