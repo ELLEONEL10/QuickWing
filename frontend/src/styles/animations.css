@@ -1,0 +1,94 @@
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes float-horizontal {
+    0%, 100% { transform: translateX(0px); }
+    50% { transform: translateX(15px); }
+}
+
+@keyframes fly-across {
+  0% { transform: translateX(-10vw) translateY(0) rotate(90deg); }
+  100% { transform: translateX(110vw) translateY(-20vh) rotate(90deg); }
+}
+
+@keyframes fly-diagonal {
+    0% { transform: translate(0, 0) rotate(45deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate(100px, -100px) rotate(45deg); opacity: 0; }
+}
+
+@keyframes drift {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100vw); }
+}
+
+@keyframes progress {
+    0% { transform: scaleX(0); }
+    100% { transform: scaleX(1); }
+}
+
+@keyframes bounce-slow {
+    0%, 100% { transform: translateY(-5%); }
+    50% { transform: translateY(5%); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-slower {
+    animation: float 12s ease-in-out infinite;
+}
+
+.animate-drift-slow {
+    animation: drift 60s linear infinite;
+}
+
+.animate-drift-slower {
+    animation: drift 90s linear infinite;
+}
+
+.animate-fly-across {
+    animation: fly-across 45s linear infinite;
+}
+
+.animate-fly-diagonal {
+    animation: fly-diagonal 3s ease-out infinite;
+}
+
+.animate-progress {
+    animation: progress 2.5s ease-out forwards;
+}
+
+.animate-bounce-slow {
+    animation: bounce-slow 3s infinite ease-in-out;
+}
+
+/* Transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+.page-transition-exit {
+  opacity: 1;
+}
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Dark mode transitions */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
