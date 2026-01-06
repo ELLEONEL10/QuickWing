@@ -23,5 +23,4 @@ jobs:
       run: uv pip install -e ".[dev]"
 
     - name: Run Ruff
-      run: cd backend
-      run: uv run ruff check src
+      run: cd backend && uv run ruff check src

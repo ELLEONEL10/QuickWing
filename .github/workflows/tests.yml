@@ -24,8 +24,7 @@ jobs:
       run: uv pip install -e ".[dev]"
 
     - name: Run tests
-      run: cd backend
-      run: uv run pytest
+      run: cd backend && uv run pytest
       env:
         ENVIRONMENT: local
         SECRET_KEY: test-secret-key-for-testing-only
