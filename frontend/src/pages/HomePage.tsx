@@ -107,6 +107,30 @@ export const HomePage: React.FC = () => {
         if (flightMinutes > filters.times.arrival.end) return false;
     }
 
+    // Stopover Duration Logic (Approximate check if stops > 0)
+    if (filters.stopoverDuration) {
+        // This would require more detailed segment data to calculate actual stopover times
+        // Logic reserved for when full itinerary details are available
+    }
+
+    // Travel Days Logic
+    if (filters.days.departure.length > 0) {
+        // Currently we don't have the date object of the flight, only time string.
+        // Assuming search results match requested date, this filter is most useful when searching flexible dates
+        // Placeholder for future implementation
+    }
+    
+    // Connections logic 
+    if (filters.connections) {
+         if (!filters.connections.selfTransfer && flight.tags?.includes('Self-transfer')) return false;
+    }
+
+    // Exclude Countries Logic
+    if (filters.excludeCountries.length > 0) {
+         if (flight.outbound.stopAirports?.some(airport => filters.excludeCountries.includes(airport))) return false; 
+         // Note: airport codes would need mapping to countries for this to be fully accurate
+    }
+
     return true;
   });
 

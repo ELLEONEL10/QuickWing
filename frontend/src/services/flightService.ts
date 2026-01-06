@@ -97,8 +97,8 @@ export const searchFlights = async (
 
             // Travel Hacks (Kiwi specific)
             if (filters.travelHacks) {
-                 // Note: throwaway ticketing and hidden cities are often enabled by default in kiwi api unless explicitly disabled
-                 // We can map these if UI exposes them
+                params.enable_throw_away_ticketing = filters.travelHacks.throwawayTicketing ? 'true' : 'false';
+                params.enable_true_hidden_city = filters.travelHacks.hiddenCities ? 'true' : 'false';
             }
         }
 

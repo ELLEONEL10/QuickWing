@@ -18,6 +18,13 @@ export const POPULAR_AIRLINES = [
   "Wizz Air"
 ];
 
+export const COUNTRIES = [
+    "United States", "United Kingdom", "France", "Germany", "Italy", "Spain", "Canada", "Australia", 
+    "Japan", "China", "India", "Brazil", "Mexico", "Russia", "South Korea", "Netherlands", 
+    "Turkey", "Switzerland", "Sweden", "Belgium", "Austria", "Portugal", "Norway", "Denmark", 
+    "Ireland", "Greece", "Poland", "Finland", "Czech Republic", "Hungary", "New Zealand", "Singapore"
+].sort();
+
 export const MOCK_FLIGHTS: Flight[] = [
   {
     id: '1',
@@ -192,10 +199,4 @@ export const AIRLINES = [
   'British Airways'
 ];
 
-export const COUNTRIES = [
-  'Austria',
-  'Belgium',
-  'Denmark',
-  'Finland',
-  'Germany'
-];
+
