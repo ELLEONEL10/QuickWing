@@ -5,7 +5,9 @@ on: [push, pull_request]
 jobs:
   tests:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
     - uses: actions/checkout@v4
 
@@ -24,7 +26,7 @@ jobs:
       run: uv pip install -e ".[dev]"
 
     - name: Run tests
-      run: cd backend && uv run pytest
+      run: uv run pytest
       env:
         ENVIRONMENT: local
         SECRET_KEY: test-secret-key-for-testing-only
