@@ -15,7 +15,7 @@ class FlightServiceError(CustomException):
     def __init__(self, message: str, status_code: int = 503) -> None:
         self.message = message
         self.status_code = status_code
-        super().__init__(message)
+        super().__init__(status_code=status_code, detail=message)
 
 
 class FlightService:

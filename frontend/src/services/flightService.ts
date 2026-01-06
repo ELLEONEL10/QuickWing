@@ -25,6 +25,7 @@ const mapLeg = (route: any[]): Leg => {
         departureTime,
         arrivalTime,
         duration: `${durationHours}h ${durationMinutes}m`,
+        durationMinutes: Math.floor(totalSeconds / 60),
         origin: firstSegment.cityFrom || firstSegment.flyFrom,
         destination: lastSegment.cityTo || lastSegment.flyTo,
         carrier: firstSegment.airline || "Airline", 
@@ -63,7 +64,7 @@ export const searchFlights = async (
             params.inbound_departure_date_end = returnDate;
         }
 
-        // 3. Map Filters to Backend Query Params
+            // Maps Filters to Backend Query Params
         if (filters) {
             // Price Filter
             if (filters.maxPrice) {
@@ -75,6 +76,29 @@ export const searchFlights = async (
                 if (filters.stops.direct) params.max_stops_count = '0';
                 else if (filters.stops.upTo1) params.max_stops_count = '1';
                 else if (filters.stops.upTo2) params.max_stops_count = '2';
+            }
+
+            if (!filters.stops.allowOvernight) {
+                params.allow_overnight_stopover = 'false';
+            }
+
+            // Bags Filter
+            if (filters.bags.cabin > 0) {
+                params.handbags = '1';
+            }
+            if (filters.bags.checked > 0) {
+                params.holdbags = '1';
+            }
+
+            // Connection Filters
+            if (filters.connections) {
+                params.enable_self_transfer = filters.connections.selfTransfer ? 'true' : 'false';
+            }
+
+            // Travel Hacks (Kiwi specific)
+            if (filters.travelHacks) {
+                 // Note: throwaway ticketing and hidden cities are often enabled by default in kiwi api unless explicitly disabled
+                 // We can map these if UI exposes them
             }
         }
 

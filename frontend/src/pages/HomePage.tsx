@@ -32,6 +32,16 @@ export const HomePage: React.FC = () => {
 
   const [lastSearchParams, setLastSearchParams] = useState<any>(null);
 
+  // Extract unique airlines from search results
+  const availableAirlines = React.useMemo(() => {
+    const airlines = new Set<string>();
+    flights.forEach(f => {
+        if (f.outbound.carrier) airlines.add(f.outbound.carrier);
+        if (f.inbound?.carrier) airlines.add(f.inbound.carrier);
+    });
+    return Array.from(airlines).sort();
+  }, [flights]);
+
   // Handle Search Request
   const handleSearch = useCallback(async (from: string, to: string, passengers: number, flightClass: string, departureDate: string, returnDate: string) => {
     setLastSearchParams({ from, to, passengers, flightClass, departureDate, returnDate });
@@ -76,7 +86,25 @@ export const HomePage: React.FC = () => {
     if (filters.carriers.length > 0) {
       const outboundCarrier = flight.outbound.carrier;
       const isIncluded = filters.carriers.some(c => outboundCarrier.includes(c));
-      if (!isIncluded) return false;
+      const inboundIncluded = flight.inbound ? filters.carriers.some(c => flight.inbound.carrier.includes(c)) : true;
+      if (!isIncluded && !inboundIncluded) return false;
+    }
+
+    if (filters.maxDuration) {
+        if (flight.outbound.durationMinutes > filters.maxDuration) return false;
+        if (flight.inbound && flight.inbound.durationMinutes > filters.maxDuration) return false;
+    }
+
+    if (filters.times?.departure?.start > 0) {
+        const [hours, minutes] = flight.outbound.departureTime.split(':').map(Number);
+        const flightMinutes = hours * 60 + minutes;
+        if (flightMinutes < filters.times.departure.start) return false;
+    }
+
+    if (filters.times?.arrival?.end < 1440) {
+        const [hours, minutes] = flight.outbound.arrivalTime.split(':').map(Number);
+        const flightMinutes = hours * 60 + minutes;
+        if (flightMinutes > filters.times.arrival.end) return false;
     }
 
     return true;
@@ -106,7 +134,7 @@ export const HomePage: React.FC = () => {
             {/* Left Sidebar */}
             <aside className="hidden lg:block w-1/4 min-w-[280px]">
                 <div className="sticky top-24">
-                    <Sidebar filters={filters} setFilters={setFilters} />
+                    <Sidebar filters={filters} setFilters={setFilters} availableAirlines={availableAirlines} />
                 </div>
             </aside>
 

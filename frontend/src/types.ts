@@ -2,6 +2,7 @@ export interface Leg {
   departureTime: string;
   arrivalTime: string;
   duration: string;
+  durationMinutes: number;
   origin: string;
   destination: string;
   carrier: string;

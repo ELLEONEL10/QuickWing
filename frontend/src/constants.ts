@@ -1,5 +1,23 @@
 import { Flight } from './types';
 
+export const POPULAR_AIRLINES = [
+  "Emirates",
+  "EasyJet", 
+  "Ryanair",
+  "Lufthansa",
+  "British Airways",
+  "Air France",
+  "KLM",
+  "Qatar Airways", 
+  "Singapore Airlines", 
+  "Delta", 
+  "United Airlines", 
+  "American Airlines",
+  "Turkish Airlines",
+  "Etihad",
+  "Wizz Air"
+];
+
 export const MOCK_FLIGHTS: Flight[] = [
   {
     id: '1',
