@@ -148,6 +148,10 @@ class CORSSettings(BaseSettings):
     CORS_METHODS: list[str] = ["*"]
     CORS_HEADERS: list[str] = ["*"]
 
+class RapidAPISettings(BaseSettings):
+    RAPIDAPI_KEY: str = "your_rapidapi_key_here"
+    RAPIDAPI_HOST: str = "kiwi-com-cheap-flights.p.rapidapi.com"
+
 
 class Settings(
     AppSettings,
@@ -164,6 +168,7 @@ class Settings(
     CRUDAdminSettings,
     EnvironmentSettings,
     CORSSettings,
+    RapidAPISettings,
 ):
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", ".env"),
