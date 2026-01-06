@@ -1,14 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { SearchBar } from '../components/SearchBar';
 import { Sidebar } from '../components/Sidebar';
 import { FlightList } from '../components/FlightList';
 import { Flight, FilterState } from '../types';
-import { MOCK_FLIGHTS } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { searchFlights } from '../services/flightService';
 
 export const HomePage: React.FC = () => {
-  const [flights, setFlights] = useState<Flight[]>(MOCK_FLIGHTS);
+  const [flights, setFlights] = useState<Flight[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
   
@@ -31,25 +30,38 @@ export const HomePage: React.FC = () => {
     days: { departure: [], return: [] }
   });
 
+  const [lastSearchParams, setLastSearchParams] = useState<any>(null);
+
   // Handle Search Request
   const handleSearch = useCallback(async (from: string, to: string, passengers: number, flightClass: string, departureDate: string, returnDate: string) => {
+    setLastSearchParams({ from, to, passengers, flightClass, departureDate, returnDate });
     setIsLoading(true);
     try {
-      const results = await searchFlights(from, to, passengers, flightClass, departureDate, returnDate);
-      // Fallback to mock if API returns empty (for demo purposes if API key is invalid)
-      if (results.length > 0) {
-          setFlights(results);
-      } else {
-          console.warn("API returned no results, falling back to mock data for demo.");
-          setFlights(MOCK_FLIGHTS); 
-      }
+      const results = await searchFlights(from, to, passengers, flightClass, departureDate, returnDate, filters);
+      setFlights(results);
     } catch (error) {
-      console.error("Search failed, using mock data", error);
-      setFlights(MOCK_FLIGHTS);
+      console.error("Search failed", error);
+      setFlights([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [filters]);
+
+  useEffect(() => {
+    if (lastSearchParams) {
+        const timer = setTimeout(() => {
+            handleSearch(
+                lastSearchParams.from, 
+                lastSearchParams.to, 
+                lastSearchParams.passengers, 
+                lastSearchParams.flightClass, 
+                lastSearchParams.departureDate, 
+                lastSearchParams.returnDate
+            );
+        }, 500);
+        return () => clearTimeout(timer);
+    }
+  }, [filters]);
 
   // Filter Logic
   const filteredFlights = flights.filter(flight => {

@@ -14,12 +14,13 @@ const POPULAR_CITIES = [
 ];
 
 export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => {
-  const [from, setFrom] = useState('Berlin');
-  const [to, setTo] = useState('New York');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [passengers, setPassengers] = useState(1);
   const [flightClass, setFlightClass] = useState('economy');
   const [showPassengers, setShowPassengers] = useState(false);
   const [showClass, setShowClass] = useState(false);
+  const [isReturnTrip, setIsReturnTrip] = useState(true);
   
   // Date states
   const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
@@ -49,7 +50,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(from, to, passengers, flightClass, departureDate, returnDate);
+    onSearch(from, to, passengers, flightClass, departureDate, isReturnTrip ? returnDate : '');
   };
 
   const handleSwap = () => {
@@ -69,11 +70,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
         <div className="flex flex-col md:flex-row gap-6 items-start md:items-center mb-6 text-sm font-medium text-gray-600 dark:text-gray-300">
            <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-700/50 p-1.5 rounded-xl">
              <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-slate-600 has-[:checked]:shadow-sm has-[:checked]:text-brand-blue dark:has-[:checked]:text-blue-400 has-[:checked]:font-bold">
-                <input type="radio" name="tripType" defaultChecked className="hidden" /> 
+                <input 
+                  type="radio" 
+                  name="tripType" 
+                  checked={isReturnTrip}
+                  onChange={() => setIsReturnTrip(true)}
+                  className="hidden" 
+                /> 
                 {t('return')}
              </label>
              <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-slate-600 has-[:checked]:shadow-sm has-[:checked]:text-brand-blue dark:has-[:checked]:text-blue-400 has-[:checked]:font-bold">
-                <input type="radio" name="tripType" className="hidden" /> 
+                <input 
+                  type="radio" 
+                  name="tripType" 
+                  checked={!isReturnTrip}
+                  onChange={() => setIsReturnTrip(false)}
+                  className="hidden" 
+                /> 
                 One-way
              </label>
            </div>
@@ -235,7 +248,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
             </div>
 
           </div>
-
           {/* Date Inputs */}
           <div className="flex flex-1 items-center bg-gray-50 dark:bg-slate-900 rounded-2xl p-1.5 border border-gray-200 dark:border-slate-700 shadow-inner focus-within:ring-2 focus-within:ring-brand-blue/20 focus-within:border-brand-blue transition-all">
              <div className="flex-1 px-4 py-2 border-r border-gray-200 dark:border-slate-700 relative">
@@ -247,15 +259,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
                     className="bg-transparent border-none outline-none w-full font-bold text-sm text-gray-900 dark:text-white p-0 uppercase" 
                 />
              </div>
-             <div className="flex-1 px-4 py-2">
-                <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">{t('return')}</div>
-                <input 
-                    type="date" 
-                    value={returnDate}
-                    onChange={(e) => setReturnDate(e.target.value)}
-                    className="bg-transparent border-none outline-none w-full font-bold text-sm text-gray-900 dark:text-white p-0 uppercase" 
-                />
-             </div>
+             {isReturnTrip && (
+                 <div className="flex-1 px-4 py-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                    <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">{t('return')}</div>
+                    <input 
+                        type="date" 
+                        value={returnDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        className="bg-transparent border-none outline-none w-full font-bold text-sm text-gray-900 dark:text-white p-0 uppercase" 
+                    />
+                 </div>
+             )}
           </div>
 
           <button 

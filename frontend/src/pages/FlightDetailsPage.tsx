@@ -66,18 +66,7 @@ const FlightLegDetails: React.FC<{ leg: Leg; title: string }> = ({ leg, title })
             </div>
             
             <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <Luggage className="w-4 h-4" />
-                    <span>Cabin Bag: <b>Included (7kg)</b></span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <Briefcase className="w-4 h-4" />
-                    <span>Checked Bag: <b>20kg</b></span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <Info className="w-4 h-4" />
-                    <span>Reschedule Available</span>
-                </div>
+               {/* Luggage info removed as it is not provided by API */}
             </div>
         </div>
     );

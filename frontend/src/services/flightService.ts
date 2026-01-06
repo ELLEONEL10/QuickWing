@@ -1,4 +1,4 @@
-import { Flight, Leg } from '../types';
+import { Flight, Leg, FilterState } from '../types';
 import { API_URL } from '../config';
 
 interface ApiFlightResponse {
@@ -39,17 +39,20 @@ export const searchFlights = async (
     passengers: number = 1, 
     flightClass: string = 'ECONOMY',
     departureDate?: string,
-    returnDate?: string
+    returnDate?: string,
+    filters?: FilterState // Add filters parameter
 ): Promise<Flight[]> => {
     try {
+        // 1. Map basic parameters
         const params: Record<string, string> = {
             source: from,
             destination: to,
             adults: passengers.toString(),
             cabin_class: flightClass.toUpperCase(),
-            limit: '20'
+            limit: '50' // Increased limit
         };
 
+        // 2. Map Dates
         if (departureDate) {
             params.outbound_department_date_start = departureDate;
             params.outbound_department_date_end = departureDate;
@@ -60,16 +63,29 @@ export const searchFlights = async (
             params.inbound_departure_date_end = returnDate;
         }
 
+        // 3. Map Filters to Backend Query Params
+        if (filters) {
+            // Price Filter
+            if (filters.maxPrice) {
+                params.price_end = filters.maxPrice.toString();
+            }
+
+            // Stops Filter
+            if (!filters.stops.any) {
+                if (filters.stops.direct) params.max_stops_count = '0';
+                else if (filters.stops.upTo1) params.max_stops_count = '1';
+                else if (filters.stops.upTo2) params.max_stops_count = '2';
+            }
+        }
+
         const queryParams = new URLSearchParams(params);
 
-        // Use One-Way or Round-Trip based on logic. For now, defaulting to Round-Trip search endpoint as used in example
-        // But if dates are missing it might fail. Let's assume generic search. 
-        // NOTE: The backend endpoint is /flights/search/round-trip 
-        const response = await fetch(`${API_URL}/flights/search/round-trip?${queryParams}`, {
+        // Determine endpoint based on dates (Round Trip vs One Way)
+        const endpoint = returnDate ? '/flights/search/round-trip' : '/flights/search/one-way';
+
+        const response = await fetch(`${API_URL}${endpoint}?${queryParams}`, {
             headers: {
                 'Content-Type': 'application/json',
-                // Add Authorization if needed
-                // 'Authorization': `Bearer ${localStorage.getItem('token')}` 
             }
         });
 
@@ -83,13 +99,14 @@ export const searchFlights = async (
             return [];
         }
 
+        // Map response
         return data.data.map((item: any) => ({
             id: item.id,
             price: item.price,
             currency: data.currency || "USD",
             dealRating: "Good Price", 
-            outbound: mapLeg(item.route || []), // Needs proper route parsing for outbound/inbound splitting
-            inbound: mapLeg(item.route || []), // Placeholder: Real API separates return legs
+            outbound: mapLeg(item.route?.filter((r: any) => r.return === 0) || []),
+            inbound: mapLeg(item.route?.filter((r: any) => r.return === 1) || []),
             tags: []
         }));
 
