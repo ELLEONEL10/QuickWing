@@ -18,7 +18,8 @@ class FlightSearchBase(BaseModel):
         str, Field(default="ECONOMY", examples=["ECONOMY", "ECONOMY_PREMIUM", "BUSINESS", "FIRST_CLASS"])
     ]
     sort_by: Annotated[
-        str, Field(default="QUALITY", examples=["QUALITY", "PRICE", "DURATION", "SOURCE_TAKEOFF", "DESTINATION_LANDING"])
+        str, Field(default="QUALITY",
+                   examples=["QUALITY", "PRICE", "DURATION", "SOURCE_TAKEOFF", "DESTINATION_LANDING"])
     ]
     sort_order: Annotated[str, Field(default="ASCENDING", examples=["ASCENDING", "DESCENDING"])]
     apply_mixed_classes: Annotated[bool, Field(default=True)]

@@ -100,3 +100,10 @@ def current_user_dict():
         "name": fake.name(),
         "is_superuser": False,
     }
+
+@pytest.fixture(autouse=True)
+def disable_cache(monkeypatch):
+    monkeypatch.setattr(
+        "src.app.core.utils.cache.cache",
+        lambda *args, **kwargs: (lambda f: f),
+    )
