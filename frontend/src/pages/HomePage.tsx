@@ -5,6 +5,7 @@ import { FlightList } from '../components/FlightList';
 import { Flight, FilterState } from '../types';
 import { MOCK_FLIGHTS } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
+import { searchFlights } from '../services/flightService';
 
 export const HomePage: React.FC = () => {
   const [flights, setFlights] = useState<Flight[]>(MOCK_FLIGHTS);
@@ -31,18 +32,23 @@ export const HomePage: React.FC = () => {
   });
 
   // Handle Search Request
-  const handleSearch = useCallback(async (from: string, to: string, passengers: number, flightClass: string) => {
+  const handleSearch = useCallback(async (from: string, to: string, passengers: number, flightClass: string, departureDate: string, returnDate: string) => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      // Simple mock filtering based on search
-      const results = MOCK_FLIGHTS.filter(f => 
-        (from === '' || f.outbound.origin.toLowerCase().includes(from.toLowerCase())) &&
-        (to === '' || f.outbound.destination.toLowerCase().includes(to.toLowerCase()))
-      );
-      setFlights(results.length > 0 ? results : MOCK_FLIGHTS);
+    try {
+      const results = await searchFlights(from, to, passengers, flightClass, departureDate, returnDate);
+      // Fallback to mock if API returns empty (for demo purposes if API key is invalid)
+      if (results.length > 0) {
+          setFlights(results);
+      } else {
+          console.warn("API returned no results, falling back to mock data for demo.");
+          setFlights(MOCK_FLIGHTS); 
+      }
+    } catch (error) {
+      console.error("Search failed, using mock data", error);
+      setFlights(MOCK_FLIGHTS);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   }, []);
 
   // Filter Logic

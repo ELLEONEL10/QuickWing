@@ -9,6 +9,7 @@ export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   return (
     <header className="bg-white/90 backdrop-blur-md dark:bg-slate-900/90 text-slate-800 dark:text-white py-3 px-4 md:px-8 sticky top-0 z-50 shadow-sm dark:shadow-md transition-colors duration-300 border-b border-gray-200 dark:border-slate-800">
@@ -37,21 +38,30 @@ export const Header: React.FC = () => {
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           
-          <div className="relative group">
-            <button className="flex items-center gap-1 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white">
+          <div className="relative">
+            <button 
+                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                className="flex items-center gap-1 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white"
+            >
               <Globe className="w-4 h-4" /> {language.toUpperCase()}
             </button>
-            <div className="absolute right-0 top-full mt-2 w-24 bg-white dark:bg-slate-800 text-gray-800 dark:text-white rounded shadow-lg py-1 hidden group-hover:block border border-gray-100 dark:border-slate-700">
-              {(['en', 'es', 'fr'] as Language[]).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 ${language === lang ? 'font-bold text-brand-blue dark:text-blue-400' : ''}`}
-                >
-                  {lang.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            
+            {isLangMenuOpen && (
+                <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsLangMenuOpen(false)}></div>
+                <div className="absolute right-0 top-full mt-2 w-24 bg-white dark:bg-slate-800 text-gray-800 dark:text-white rounded shadow-lg py-1 border border-gray-100 dark:border-slate-700 z-20">
+                {(['en', 'es', 'fr', 'ar'] as Language[]).map((lang) => (
+                    <button
+                    key={lang}
+                    onClick={() => { setLanguage(lang); setIsLangMenuOpen(false); }}
+                    className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 ${language === lang ? 'font-bold text-brand-blue dark:text-blue-400' : ''}`}
+                    >
+                    {lang.toUpperCase()}
+                    </button>
+                ))}
+                </div>
+                </>
+            )}
           </div>
         </div>
 

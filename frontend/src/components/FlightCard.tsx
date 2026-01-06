@@ -99,42 +99,65 @@ const LegDetail: React.FC<{ leg: Leg }> = ({ leg }) => {
 export const FlightCard: React.FC<{ flight: Flight }> = ({ flight }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  
+  const handleBook = () => {
+      navigate('/flight-details', { state: { flight } });
+  };
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-all duration-200 group">
-      <div className="p-4 flex flex-col md:flex-row gap-6">
-        {/* Flight Details */}
-        <div className="flex-1">
-           <LegDetail leg={flight.outbound} />
-           <div className="h-[1px] bg-gray-100 dark:bg-slate-700 w-full"></div>
-           <LegDetail leg={flight.inbound} />
+    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 mb-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1">
+      <div className="flex flex-col md:flex-row gap-6">
+        
+        {/* Legs Section */}
+        <div className="flex-1 min-w-0 pr-0 md:pr-6 border-r-0 md:border-r border-dashed border-gray-200 dark:border-slate-700">
+            {/* Outbound */}
+            <LegDetail leg={flight.outbound} />
+            
+            {/* Divider if inbound */}
+            {flight.inbound && (
+                <div className="my-2 border-t border-gray-50 dark:border-slate-700/50"></div>
+            )}
+
+            {/* Inbound */}
+            {flight.inbound && (
+                <LegDetail leg={flight.inbound} />
+            )}
         </div>
 
-        {/* Price & Action */}
-        <div className="md:w-48 flex flex-col justify-between border-l border-gray-100 dark:border-slate-700 pl-0 md:pl-6 pt-4 md:pt-0">
-           <div className="flex flex-col items-end">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total price</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {flight.currency}{flight.price}
-              </div>
-              <div className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
-                 {flight.dealRating}
-              </div>
-           </div>
+        {/* Price & Action Section */}
+        <div className="w-full md:w-48 flex flex-row md:flex-col justify-between items-center md:justify-center gap-4 pl-0 md:pl-2">
+            <div>
+                 <div className="text-right md:text-center text-sm text-gray-400 font-medium mb-1">Total Price</div>
+                 <div className="text-right md:text-center text-3xl font-extrabold text-brand-blue dark:text-blue-400">
+                    {flight.price} <span className="text-sm font-bold opacity-70">{flight.currency}</span>
+                 </div>
+                 {flight.dealRating && (
+                     <div className="hidden md:block text-xs font-bold text-center mt-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
+                         {flight.dealRating}
+                     </div>
+                 )}
+            </div>
 
-           <div className="mt-6 flex flex-col gap-2">
-              <button 
-                onClick={() => navigate('/booking')}
-                className="w-full bg-brand-blue hover:bg-blue-800 text-white font-bold py-2.5 rounded transition-colors flex items-center justify-center gap-2"
-              >
-                 {t('book')} <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
-              </button>
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                 <Briefcase className="w-3 h-3" />
-                 <span>Cabin bag included</span>
-              </div>
-           </div>
+            <button 
+                onClick={handleBook}
+                className="bg-brand-blue hover:bg-brand-dark text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-brand-blue/30 transition-all active:scale-95 w-auto md:w-full flex items-center justify-center gap-2"
+            >
+                {t('bookNow')} <Briefcase className="w-4 h-4" />
+            </button>
         </div>
+
       </div>
+      
+      {/* Footer Tags */}
+      {flight.tags && flight.tags.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex gap-2 overflow-x-auto">
+             {flight.tags.map((tag, i) => (
+                 <span key={i} className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-md whitespace-nowrap">
+                     {tag}
+                 </span>
+             ))}
+          </div>
+      )}
     </div>
   );
 };

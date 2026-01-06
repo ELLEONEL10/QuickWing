@@ -91,6 +91,37 @@ export const translations = {
     economy: "Économique",
     business: "Affaires",
     firstClass: "Première Classe"
+  },
+  ar: {
+    search: "بحث عن رحلات",
+    from: "من",
+    to: "إلى",
+    departure: "المغادرة",
+    return: "العودة",
+    passengers: "الركاب",
+    class: "الدرجة",
+    searchButton: "بحث",
+    loading: "جاري البحث عن أفضل الرحلات...",
+    noFlights: "لا توجد رحلات.",
+    currency: "د.إ",
+    stops: "توقفت",
+    duration: "المدة",
+    airline: "شركة الطيران",
+    price: "السعر",
+    book: "احجز الآن",
+    filters: "تصفية",
+    darkMode: "الوضع الداكن",
+    lightMode: "الوضع الفاتح",
+    language: "اللغة",
+    best: "الأفضل",
+    cheapest: "الأرخص",
+    fastest: "الأسرع",
+    direct: "مباشر",
+    oneStop: "توقف واحد",
+    twoPlusStops: "توقفين+",
+    economy: "اقتصادية",
+    business: "رجال الأعمال",
+    firstClass: "الدرجة الأولى"
   }
 };
 

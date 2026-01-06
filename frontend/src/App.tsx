@@ -6,6 +6,7 @@ import { Background } from './components/Background';
 import { useTheme } from './contexts/ThemeContext';
 import { HomePage } from './pages/HomePage';
 import { BookingPage } from './pages/BookingPage';
+import { FlightDetailsPage } from './pages/FlightDetailsPage';
 import { HotelsPage } from './pages/HotelsPage';
 import { HelpPage } from './pages/HelpPage';
 import { SignInPage } from './pages/SignInPage';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/flight-details" element={<FlightDetailsPage />} />
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/hotels" element={<HotelsPage />} />
             <Route path="/help" element={<HelpPage />} />

@@ -1,9 +1,46 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Lock, ArrowRight } from 'lucide-react';
+import { API_URL } from '../config';
 
 export const SignInPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed. Please check your credentials.');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      navigate('/'); 
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex-grow container mx-auto px-4 md:px-6 py-12 flex items-center justify-center">
@@ -16,7 +53,13 @@ export const SignInPage: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400">Sign in to access your bookings</p>
         </div>
 
-        <form className="space-y-6">
+        {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium">
+                {error}
+            </div>
+        )}
+
+        <form className="space-y-6" onSubmit={handleLogin}>
             <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                 <div className="relative">
@@ -53,9 +96,13 @@ export const SignInPage: React.FC = () => {
                 <a href="#" className="text-brand-blue dark:text-blue-400 font-bold hover:underline">Forgot password?</a>
             </div>
 
-            <button type="button" className="w-full bg-brand-blue hover:bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-blue/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                <span>Sign In</span>
-                <ArrowRight className="w-5 h-5" />
+            <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-brand-blue hover:bg-brand-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-blue/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            >
+                <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+                {!loading && <ArrowRight className="w-5 h-5" />}
             </button>
         </form>
 
