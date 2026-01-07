@@ -5,26 +5,57 @@ import { ChevronDown, Minus, Plus, ArrowLeftRight, Search } from 'lucide-react';
 interface SearchBarProps {
   onSearch: (from: string, to: string, passengers: number, flightClass: string, departureDate: string, returnDate: string) => void;
   isLoading: boolean;
+  initialValues?: {
+    from?: string;
+    to?: string;
+    passengers?: number;
+    flightClass?: string;
+    departureDate?: string;
+    returnDate?: string;
+  };
 }
 
-const POPULAR_CITIES = [
+export const POPULAR_CITIES = [
     "London", "Paris", "New York", "Berlin", "Tokyo", "Dubai", "Singapore", 
     "Los Angeles", "Rome", "Barcelona", "Amsterdam", "Hong Kong", "Sydney",
-    "Istanbul", "Bangkok", "Madrid", "Frankfurt", "Dublin", "Lisbon"
+    "Istanbul", "Bangkok", "Madrid", "Frankfurt", "Dublin", "Lisbon", "Dubrovnik"
 ];
 
-export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [passengers, setPassengers] = useState(1);
-  const [flightClass, setFlightClass] = useState('economy');
+export const CITY_CODES: Record<string, string> = {
+    "London": "City:london_gb",
+    "Paris": "City:paris_fr",
+    "New York": "City:new-york-city_ny_us",
+    "Berlin": "City:berlin_de",
+    "Tokyo": "City:tokyo_jp",
+    "Dubai": "City:dubai_ae",
+    "Singapore": "City:singapore_sg",
+    "Los Angeles": "City:los-angeles_ca_us",
+    "Rome": "City:rome_it",
+    "Barcelona": "City:barcelona_es",
+    "Amsterdam": "City:amsterdam_nl",
+    "Hong Kong": "City:hong-kong_hk",
+    "Sydney": "City:sydney_au",
+    "Istanbul": "City:istanbul_tr",
+    "Bangkok": "City:bangkok_th",
+    "Madrid": "City:madrid_es",
+    "Frankfurt": "City:frankfurt-am-main_de",
+    "Dublin": "City:dublin_ie",
+    "Lisbon": "City:lisbon_pt",
+    "Dubrovnik": "City:dubrovnik_hr"
+};
+
+export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading, initialValues }) => {
+  const [from, setFrom] = useState(initialValues?.from || '');
+  const [to, setTo] = useState(initialValues?.to || '');
+  const [passengers, setPassengers] = useState(initialValues?.passengers || 1);
+  const [flightClass, setFlightClass] = useState(initialValues?.flightClass || 'economy');
   const [showPassengers, setShowPassengers] = useState(false);
   const [showClass, setShowClass] = useState(false);
-  const [isReturnTrip, setIsReturnTrip] = useState(true);
+  const [isReturnTrip, setIsReturnTrip] = useState(!!initialValues?.returnDate || true);
   
   // Date states
-  const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
-  const [returnDate, setReturnDate] = useState(new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]);
+  const [departureDate, setDepartureDate] = useState(initialValues?.departureDate || new Date().toISOString().split('T')[0]);
+  const [returnDate, setReturnDate] = useState(initialValues?.returnDate || new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0]);
   
   // Autocomplete states
   const [showFromSuggestions, setShowFromSuggestions] = useState(false);
@@ -34,6 +65,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
   const toRef = useRef<HTMLDivElement>(null);
 
   const { t } = useLanguage();
+
+  useEffect(() => {
+    if (initialValues) {
+        if (initialValues.from !== undefined && initialValues.from !== from) setFrom(initialValues.from);
+        if (initialValues.to !== undefined && initialValues.to !== to) setTo(initialValues.to);
+        // Only update these if strictly necessary to avoid resetting user interaction
+        // setPassengers(initialValues.passengers || 1);
+        // setFlightClass(initialValues.flightClass || 'economy');
+    }
+  }, [initialValues]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,7 +91,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(from, to, passengers, flightClass, departureDate, isReturnTrip ? returnDate : '');
+    const sourceCode = CITY_CODES[from] || from;
+    const destCode = CITY_CODES[to] || to;
+    onSearch(sourceCode, destCode, passengers, flightClass, departureDate, isReturnTrip ? returnDate : '');
   };
 
   const handleSwap = () => {

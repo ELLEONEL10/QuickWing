@@ -1,37 +1,42 @@
 import { Flight, Leg, FilterState } from '../types';
 import { API_URL } from '../config';
 
-interface ApiFlightResponse {
-  data: any[];
-  currency: string;
-  _results: number;
-}
+const mapSector = (sector: any): Leg => {
+  if (!sector || !sector.sectorSegments || sector.sectorSegments.length === 0) {
+      // Fallback or empty leg
+      return {
+          departureTime: '',
+          arrivalTime: '',
+          duration: '',
+          durationMinutes: 0,
+          origin: '',
+          destination: '',
+          carrier: '',
+          stops: 0,
+          stopAirports: []
+      };
+  }
+  const segments = sector.sectorSegments;
+  const firstSegment = segments[0].segment;
+  const lastSegment = segments[segments.length - 1].segment;
 
-const mapLeg = (route: any[]): Leg => {
-    // This is a simplified mapper assuming the API returns a list of segments in 'route'
-    // We take the first segment as origin and last as destination for the leg summary
-    const firstSegment = route[0];
-    const lastSegment = route[route.length - 1];
+  // Calculate total duration from sector duration (seconds)
+  const totalSeconds = sector.duration;
+  const durationHours = Math.floor(totalSeconds / 3600);
+  const durationMinutes = Math.floor((totalSeconds % 3600) / 60);
 
-    const departureTime = new Date(firstSegment.local_departure || firstSegment.dTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const arrivalTime = new Date(lastSegment.local_arrival || lastSegment.aTime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    // Calculate duration
-    const totalSeconds = (lastSegment.aTime || 0) - (firstSegment.dTime || 0);
-    const durationHours = Math.floor(totalSeconds / 3600);
-    const durationMinutes = Math.floor((totalSeconds % 3600) / 60);
-
-    return {
-        departureTime,
-        arrivalTime,
-        duration: `${durationHours}h ${durationMinutes}m`,
-        durationMinutes: Math.floor(totalSeconds / 60),
-        origin: firstSegment.cityFrom || firstSegment.flyFrom,
-        destination: lastSegment.cityTo || lastSegment.flyTo,
-        carrier: firstSegment.airline || "Airline", 
-        stops: route.length - 1,
-        stopAirports: route.slice(0, -1).map((r: any) => r.cityTo)
-    };
+  return {
+      departureTime: new Date(firstSegment.source.localTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      arrivalTime: new Date(lastSegment.destination.localTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      duration: `${durationHours}h ${durationMinutes}m`,
+      durationMinutes: Math.floor(totalSeconds / 60),
+      origin: firstSegment.source.station?.city?.name || firstSegment.source.station?.name || 'Unknown', 
+      destination: lastSegment.destination.station?.city?.name || lastSegment.destination.station?.name || 'Unknown',
+      carrier: firstSegment.carrier.name, 
+      carrierLogo: firstSegment.carrier.name, 
+      stops: segments.length - 1,
+      stopAirports: segments.slice(0, -1).map((s: any) => s.segment.destination.station?.city?.name || s.segment.destination.station?.name || '')
+  };
 };
 
 export const searchFlights = async (
@@ -41,19 +46,17 @@ export const searchFlights = async (
     flightClass: string = 'ECONOMY',
     departureDate?: string,
     returnDate?: string,
-    filters?: FilterState // Add filters parameter
+    filters?: FilterState 
 ): Promise<Flight[]> => {
     try {
-        // 1. Map basic parameters
         const params: Record<string, string> = {
             source: from,
             destination: to,
             adults: passengers.toString(),
             cabin_class: flightClass.toUpperCase(),
-            limit: '50' // Increased limit
+            limit: '50' 
         };
 
-        // 2. Map Dates
         if (departureDate) {
             params.outbound_department_date_start = departureDate;
             params.outbound_department_date_end = departureDate;
@@ -64,14 +67,11 @@ export const searchFlights = async (
             params.inbound_departure_date_end = returnDate;
         }
 
-            // Maps Filters to Backend Query Params
         if (filters) {
-            // Price Filter
             if (filters.maxPrice) {
                 params.price_end = filters.maxPrice.toString();
             }
 
-            // Stops Filter
             if (!filters.stops.any) {
                 if (filters.stops.direct) params.max_stops_count = '0';
                 else if (filters.stops.upTo1) params.max_stops_count = '1';
@@ -82,7 +82,6 @@ export const searchFlights = async (
                 params.allow_overnight_stopover = 'false';
             }
 
-            // Bags Filter
             if (filters.bags.cabin > 0) {
                 params.handbags = '1';
             }
@@ -90,12 +89,10 @@ export const searchFlights = async (
                 params.holdbags = '1';
             }
 
-            // Connection Filters
             if (filters.connections) {
                 params.enable_self_transfer = filters.connections.selfTransfer ? 'true' : 'false';
             }
 
-            // Travel Hacks (Kiwi specific)
             if (filters.travelHacks) {
                 params.enable_throw_away_ticketing = filters.travelHacks.throwawayTicketing ? 'true' : 'false';
                 params.enable_true_hidden_city = filters.travelHacks.hiddenCities ? 'true' : 'false';
@@ -103,8 +100,6 @@ export const searchFlights = async (
         }
 
         const queryParams = new URLSearchParams(params);
-
-        // Determine endpoint based on dates (Round Trip vs One Way)
         const endpoint = returnDate ? '/flights/search/round-trip' : '/flights/search/one-way';
 
         const response = await fetch(`${API_URL}${endpoint}?${queryParams}`, {
@@ -117,20 +112,22 @@ export const searchFlights = async (
             throw new Error(`API Error: ${response.statusText}`);
         }
 
-        const data: ApiFlightResponse = await response.json();
+        const data = await response.json();
         
-        if (!data.data || !Array.isArray(data.data)) {
+        // Handle the new API structure which uses 'itineraries'
+        if (!data.itineraries || !Array.isArray(data.itineraries)) {
+            // Check if it's the old structure? Or just log and return empty
+            console.warn("Unexpected API response structure", data);
             return [];
         }
 
-        // Map response
-        return data.data.map((item: any) => ({
+        return data.itineraries.map((item: any) => ({
             id: item.id,
-            price: item.price,
-            currency: data.currency || "USD",
+            price: parseFloat(item.price.amount),
+            currency: "USD",
             dealRating: "Good Price", 
-            outbound: mapLeg(item.route?.filter((r: any) => r.return === 0) || []),
-            inbound: mapLeg(item.route?.filter((r: any) => r.return === 1) || []),
+            outbound: mapSector(item.outbound),
+            inbound: item.inbound ? mapSector(item.inbound) : undefined,
             tags: []
         }));
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plane, Hotel, Globe, HelpCircle, User, Menu, Moon, Sun, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Plane, Hotel, Globe, HelpCircle, User, Menu, Moon, Sun, X, Home } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
@@ -10,23 +10,32 @@ export const Header: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+  const getLinkClass = (path: string) => isActive(path) 
+    ? "flex items-center gap-2 border-b-2 border-brand-blue dark:border-white pb-0.5 text-brand-blue dark:text-white"
+    : "flex items-center gap-2 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white transition-colors pb-0.5 border-b-2 border-transparent";
 
   return (
     <header className="bg-white/90 backdrop-blur-md dark:bg-slate-900/90 text-slate-800 dark:text-white py-3 px-4 md:px-8 sticky top-0 z-50 shadow-sm dark:shadow-md transition-colors duration-300 border-b border-gray-200 dark:border-slate-800">
       <div className="flex items-center justify-between">
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <img src={theme === 'dark' ? "/logo-dark.png" : "/logo.png"} alt="QuikWing" className="h-10 w-auto object-contain" />
+          <img src={theme === 'dark' ? "/logo-dark.png" : "/Logo.png"} alt="QuikWing" className="h-10 w-auto object-contain" />
         </Link>
         
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link to="/" className="flex items-center gap-2 border-b-2 border-brand-blue dark:border-white pb-0.5 text-brand-blue dark:text-white">
+          <Link to="/" className={getLinkClass('/')}>
+            <Home className="w-4 h-4" /> Home
+          </Link>
+          <Link to="/flights" className={getLinkClass('/flights')}>
             <Plane className="w-4 h-4" /> {t('search')}
           </Link>
-          <Link to="/hotels" className="flex items-center gap-2 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white transition-colors">
+          <Link to="/hotels" className={getLinkClass('/hotels')}>
             <Hotel className="w-4 h-4" /> Hotels
           </Link>
-          <Link to="/help" className="flex items-center gap-2 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white transition-colors">
+          <Link to="/help" className={getLinkClass('/help')}>
             <HelpCircle className="w-4 h-4" /> Help
           </Link>
         </nav>

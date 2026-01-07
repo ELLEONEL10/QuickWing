@@ -5,6 +5,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { Background } from './components/Background';
 import { useTheme } from './contexts/ThemeContext';
 import { HomePage } from './pages/HomePage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { BookingPage } from './pages/BookingPage';
 import { FlightDetailsPage } from './pages/FlightDetailsPage';
 import { HotelsPage } from './pages/HotelsPage';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
           
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/flights" element={<SearchResultsPage />} />
             <Route path="/flight-details" element={<FlightDetailsPage />} />
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/hotels" element={<HotelsPage />} />
