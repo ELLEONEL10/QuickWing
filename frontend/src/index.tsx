@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import './styles/animations.css';
 
 const rootElement = document.getElementById('root');
@@ -15,7 +16,9 @@ root.render(
   <React.StrictMode>
     <ThemeProvider>
       <LanguageProvider>
-        <App />
+        <CurrencyProvider>
+          <App />
+        </CurrencyProvider>
       </LanguageProvider>
     </ThemeProvider>
   </React.StrictMode>

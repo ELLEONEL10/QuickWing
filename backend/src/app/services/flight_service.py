@@ -70,8 +70,8 @@ class FlightService:
             "limit": "limit",
             "inbound_departure_date_start": "inboundDepartureDateStart",
             "inbound_departure_date_end": "inboundDepartureDateEnd",
-            "outbound_department_date_start": "outboundDepartmentDateStart",
-            "outbound_department_date_end": "outboundDepartmentDateEnd",
+            "outbound_department_date_start": "outboundDepartureDateStart",
+            "outbound_department_date_end": "outboundDepartureDateEnd",
             "departure_date_start": "departureDateStart",
             "departure_date_end": "departureDateEnd",
         }

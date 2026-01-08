@@ -2,11 +2,37 @@ import React from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Flight, Leg } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { Briefcase, Clock, ChevronRight, ArrowRight, Luggage, Info } from 'lucide-react';
 
 const FlightLegDetails: React.FC<{ leg: Leg; title: string }> = ({ leg, title }) => {
     const { t } = useLanguage();
     
+    const getAirlineLogo = (carrier: string, carrierCode?: string) => {
+        if (carrierCode) {
+            return `https://images.kiwi.com/airlines/64/${carrierCode}.png`;
+        }
+        const map: Record<string, string> = {
+            'United Airlines': 'united.com',
+            'Lufthansa': 'lufthansa.com',
+            'British Airways': 'britishairways.com',
+            'Air France': 'airfrance.com',
+            'Delta': 'delta.com',
+            'American Airlines': 'aa.com',
+            'Emirates': 'emirates.com',
+            'Qatar Airways': 'qatarairways.com',
+            'Ryanair': 'ryanair.com',
+            'EasyJet': 'easyjet.com',
+            'KLM': 'klm.com',
+            'Turkish Airlines': 'turkishairlines.com',
+            'Singapore Airlines': 'singaporeair.com'
+        };
+        const domain = map[carrier];
+        return domain ? `https://logo.clearbit.com/${domain}` : null;
+    };
+
+    const logoUrl = getAirlineLogo(leg.carrier, leg.carrierCode);
+
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 shadow-sm border border-gray-200 dark:border-slate-700">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-brand-blue dark:text-blue-400">
@@ -44,8 +70,21 @@ const FlightLegDetails: React.FC<{ leg: Leg; title: string }> = ({ leg, title })
                         </div>
                      </div>
                      <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
-                        <div className="w-5 h-5 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-bold">
-                            {leg.carrier.substring(0, 1)}
+                        <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                            {logoUrl ? (
+                                <img 
+                                    src={logoUrl} 
+                                    alt={leg.carrier} 
+                                    className="w-8 h-8 object-contain rounded-full bg-white p-0.5 shadow-sm"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                />
+                             ) : null}
+                            <div className={`w-8 h-8 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-bold ${logoUrl ? 'hidden' : ''}`}>
+                                {leg.carrier.substring(0, 1)}
+                            </div>
                         </div>
                         <div>
                             <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Airline</div>
@@ -76,6 +115,7 @@ export const FlightDetailsPage: React.FC = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const flight = state?.flight as Flight;
 
   if (!flight) {
@@ -110,7 +150,7 @@ export const FlightDetailsPage: React.FC = () => {
                 <div>
                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Amount</div>
                      <div className="text-3xl font-extrabold text-brand-blue dark:text-blue-400">
-                        {flight.price} {flight.currency}
+                        {formatPrice(flight.price)}
                      </div>
                 </div>
                 

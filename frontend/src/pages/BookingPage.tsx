@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { CreditCard, ShieldCheck, User, Plane } from 'lucide-react';
 import { Flight } from '../types';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 export const BookingPage: React.FC = () => {
   const [step, setStep] = useState(1);
   const location = useLocation();
+  const { formatPrice } = useCurrency();
   const flight = location.state?.flight as Flight;
 
   if (!flight) {
@@ -91,7 +93,7 @@ export const BookingPage: React.FC = () => {
                                 Back
                             </button>
                             <button onClick={() => setStep(3)} className="flex-[2] bg-brand-blue text-white font-bold py-4 rounded-xl hover:bg-brand-dark transition-colors">
-                                Pay Now {flight.price} {flight.currency}
+                                Pay Now {formatPrice(flight.price)}
                             </button>
                         </div>
                     </div>

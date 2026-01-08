@@ -13,7 +13,8 @@ const mapSector = (sector: any): Leg => {
           destination: '',
           carrier: '',
           stops: 0,
-          stopAirports: []
+          stopAirports: [],
+          isOvernight: false
       };
   }
   const segments = sector.sectorSegments;
@@ -25,18 +26,34 @@ const mapSector = (sector: any): Leg => {
   const durationHours = Math.floor(totalSeconds / 3600);
   const durationMinutes = Math.floor((totalSeconds % 3600) / 60);
 
+  const depDate = new Date(firstSegment.source.localTime);
+  const arrDate = new Date(lastSegment.destination.localTime);
+  const isOvernight = arrDate.getDate() !== depDate.getDate();
+
   return {
-      departureTime: new Date(firstSegment.source.localTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      arrivalTime: new Date(lastSegment.destination.localTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      departureTime: depDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      arrivalTime: arrDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       duration: `${durationHours}h ${durationMinutes}m`,
       durationMinutes: Math.floor(totalSeconds / 60),
       origin: firstSegment.source.station?.city?.name || firstSegment.source.station?.name || 'Unknown', 
       destination: lastSegment.destination.station?.city?.name || lastSegment.destination.station?.name || 'Unknown',
       carrier: firstSegment.carrier.name, 
+      carrierCode: firstSegment.carrier.code,
       carrierLogo: firstSegment.carrier.name, 
       stops: segments.length - 1,
-      stopAirports: segments.slice(0, -1).map((s: any) => s.segment.destination.station?.city?.name || s.segment.destination.station?.name || '')
+      stopAirports: segments.slice(0, -1).map((s: any) => s.segment.destination.station?.city?.name || s.segment.destination.station?.name || ''),
+      isOvernight: isOvernight
   };
+};
+
+const formatDateForApi = (isoDate: string): string => {
+    if (!isoDate) return '';
+    // Expecting YYYY-MM-DD
+    const parts = isoDate.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return isoDate;
 };
 
 export const searchFlights = async (
@@ -54,17 +71,27 @@ export const searchFlights = async (
             destination: to,
             adults: passengers.toString(),
             cabin_class: flightClass.toUpperCase(),
-            limit: '50' 
+            limit: '50',
+            currency: 'USD'
         };
 
+        const isRoundTrip = !!returnDate;
+
         if (departureDate) {
-            params.outbound_department_date_start = departureDate;
-            params.outbound_department_date_end = departureDate;
+            const formattedDep = formatDateForApi(departureDate);
+            if (isRoundTrip) {
+                params.outbound_department_date_start = formattedDep;
+                params.outbound_department_date_end = formattedDep;
+            } else {
+                params.departure_date_start = formattedDep;
+                params.departure_date_end = formattedDep;
+            }
         }
 
         if (returnDate) {
-            params.inbound_departure_date_start = returnDate;
-            params.inbound_departure_date_end = returnDate;
+            const formattedRet = formatDateForApi(returnDate);
+            params.inbound_departure_date_start = formattedRet;
+            params.inbound_departure_date_end = formattedRet;
         }
 
         if (filters) {
@@ -72,20 +99,20 @@ export const searchFlights = async (
                 params.price_end = filters.maxPrice.toString();
             }
 
-            if (!filters.stops.any) {
+            if (filters.stops && !filters.stops.any) {
                 if (filters.stops.direct) params.max_stops_count = '0';
                 else if (filters.stops.upTo1) params.max_stops_count = '1';
                 else if (filters.stops.upTo2) params.max_stops_count = '2';
             }
 
-            if (!filters.stops.allowOvernight) {
+            if (filters.stops && !filters.stops.allowOvernight) {
                 params.allow_overnight_stopover = 'false';
             }
 
-            if (filters.bags.cabin > 0) {
+            if (filters.bags && filters.bags.cabin > 0) {
                 params.handbags = '1';
             }
-            if (filters.bags.checked > 0) {
+            if (filters.bags && filters.bags.checked > 0) {
                 params.holdbags = '1';
             }
 
@@ -100,7 +127,7 @@ export const searchFlights = async (
         }
 
         const queryParams = new URLSearchParams(params);
-        const endpoint = returnDate ? '/flights/search/round-trip' : '/flights/search/one-way';
+        const endpoint = isRoundTrip ? '/flights/search/round-trip' : '/flights/search/one-way';
 
         const response = await fetch(`${API_URL}${endpoint}?${queryParams}`, {
             headers: {
@@ -124,10 +151,10 @@ export const searchFlights = async (
         return data.itineraries.map((item: any) => ({
             id: item.id,
             price: parseFloat(item.price.amount),
-            currency: "USD",
+            currency: item.price.currency || "USD",
             dealRating: "Good Price", 
             outbound: mapSector(item.outbound),
-            inbound: item.inbound ? mapSector(item.inbound) : undefined,
+            inbound: item.inbound ? mapSector(item.inbound) : (isRoundTrip ? mapSector(item.outbound) : undefined), // Fallback to outbound if inbound missing in roundtrip (unlikely but safe)
             tags: []
         }));
 

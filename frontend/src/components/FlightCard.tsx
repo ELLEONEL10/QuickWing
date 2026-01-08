@@ -3,11 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { Flight, Leg } from '../types';
 import { Briefcase, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const LegDetail: React.FC<{ leg: Leg }> = ({ leg }) => {
     const { t } = useLanguage();
 
-    const getAirlineLogo = (carrier: string) => {
+    const getAirlineLogo = (carrier: string, carrierCode?: string) => {
+        // Try using carrier code with Kiwi's CDN which is generally reliable for IATA codes
+        if (carrierCode) {
+            return `https://images.kiwi.com/airlines/64/${carrierCode}.png`;
+        }
+
         const map: Record<string, string> = {
             'United Airlines': 'united.com',
             'Lufthansa': 'lufthansa.com',
@@ -20,13 +26,18 @@ const LegDetail: React.FC<{ leg: Leg }> = ({ leg }) => {
             'Ryanair': 'ryanair.com',
             'EasyJet': 'easyjet.com',
             'KLM': 'klm.com',
-            'Turkish Airlines': 'turkishairlines.com'
+            'Turkish Airlines': 'turkishairlines.com',
+            'Singapore Airlines': 'singaporeair.com',
+            'Cathay Pacific': 'cathaypacific.com',
+            'Etihad Airways': 'etihad.com',
+            'Air Canada': 'aircanada.com',
+             // Fallback for some others
         };
         const domain = map[carrier];
         return domain ? `https://logo.clearbit.com/${domain}` : null;
     };
 
-    const logoUrl = getAirlineLogo(leg.carrier);
+    const logoUrl = getAirlineLogo(leg.carrier, leg.carrierCode);
 
     return (
         <div className="flex items-center py-5">
@@ -38,8 +49,8 @@ const LegDetail: React.FC<{ leg: Leg }> = ({ leg }) => {
                         alt={leg.carrier} 
                         className="w-8 h-8 object-contain mb-1 rounded-full bg-white p-0.5 shadow-sm" 
                         onError={(e) => {
+                            // If Kiwi fails, try to fallback or hide
                             (e.target as HTMLImageElement).style.display = 'none';
-                            // Show fallback
                             const fallback = (e.target as HTMLImageElement).nextElementSibling;
                             if (fallback) fallback.classList.remove('hidden');
                         }} 
@@ -98,6 +109,7 @@ const LegDetail: React.FC<{ leg: Leg }> = ({ leg }) => {
 
 export const FlightCard: React.FC<{ flight: Flight }> = ({ flight }) => {
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   
   const handleBook = () => {
@@ -129,7 +141,7 @@ export const FlightCard: React.FC<{ flight: Flight }> = ({ flight }) => {
             <div>
                  <div className="text-right md:text-center text-sm text-gray-400 font-medium mb-1">Total Price</div>
                  <div className="text-right md:text-center text-3xl font-extrabold text-brand-blue dark:text-blue-400">
-                    {flight.price} <span className="text-sm font-bold opacity-70">{flight.currency}</span>
+                    {formatPrice(flight.price)}
                  </div>
                  {flight.dealRating && (
                      <div className="hidden md:block text-xs font-bold text-center mt-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">

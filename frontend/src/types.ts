@@ -6,6 +6,7 @@ export interface Leg {
   origin: string;
   destination: string;
   carrier: string;
+  carrierCode?: string;
   carrierLogo?: string;
   stops: number;
   stopAirports?: string[];

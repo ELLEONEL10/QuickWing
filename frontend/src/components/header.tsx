@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Plane, Hotel, Globe, HelpCircle, User, Menu, Moon, Sun, X, Home } from 'lucide-react';
+import { Plane, Hotel, Globe, HelpCircle, User, Menu, Moon, Sun, X, Home, Banknote } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { Language } from '../translations';
 
 export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const { currency, setCurrency } = useCurrency();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -66,6 +69,34 @@ export const Header: React.FC = () => {
                     className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 ${language === lang ? 'font-bold text-brand-blue dark:text-blue-400' : ''}`}
                     >
                     {lang.toUpperCase()}
+                    </button>
+                ))}
+                </div>
+                </>
+            )}
+          </div>
+
+          <div className="h-4 w-[1px] bg-gray-300 dark:bg-slate-600 mx-1"></div>
+
+          <div className="relative">
+            <button 
+                onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
+                className="flex items-center gap-1 text-slate-600 hover:text-brand-blue dark:text-blue-200 dark:hover:text-white"
+            >
+              <Banknote className="w-4 h-4" /> {currency}
+            </button>
+            
+            {isCurrencyMenuOpen && (
+                <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsCurrencyMenuOpen(false)}></div>
+                <div className="absolute right-0 top-full mt-2 w-24 bg-white dark:bg-slate-800 text-gray-800 dark:text-white rounded shadow-lg py-1 border border-gray-100 dark:border-slate-700 z-20 max-h-60 overflow-y-auto">
+                {(['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR'] as const).map((curr) => (
+                    <button
+                    key={curr}
+                    onClick={() => { setCurrency(curr); setIsCurrencyMenuOpen(false); }}
+                    className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 ${currency === curr ? 'font-bold text-brand-blue dark:text-blue-400' : ''}`}
+                    >
+                    {curr}
                     </button>
                 ))}
                 </div>
