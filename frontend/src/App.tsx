@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Header } from './components/Header';
+import { Header } from './components/header';
 import { SplashScreen } from './components/SplashScreen';
 import { Background } from './components/Background';
 import { useTheme } from './contexts/ThemeContext';
