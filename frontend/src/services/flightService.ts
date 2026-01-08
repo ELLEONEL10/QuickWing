@@ -1,4 +1,4 @@
-import { Flight, Leg, FilterState } from '../types';
+import { Flight, Leg, FilterState, Segment, Layover, BaggageInfo } from '../types';
 import { API_URL } from '../config';
 
 const formatTime = (dateInput: string | number) => {
@@ -17,6 +17,13 @@ const formatTime = (dateInput: string | number) => {
     } catch (e) {
         return '';
     }
+};
+
+const formatDurationFromSeconds = (seconds: number): { text: string; minutes: number } => {
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return { text: `${hours}h ${mins}m`, minutes };
 };
 
 const calculateDuration = (start: string | number, end: string | number): { text: string; minutes: number } => {
@@ -58,13 +65,15 @@ const processSector = (sector: any): Leg => {
             carrier: '',
             stops: 0,
             stopAirports: [],
-            isOvernight: false
+            isOvernight: false,
+            segments: [],
+            layovers: []
         } as Leg;
     }
 
-    const segments = sector.sectorSegments;
-    const firstSegment = segments[0].segment;
-    const lastSegment = segments[segments.length - 1].segment;
+    const sectorSegments = sector.sectorSegments;
+    const firstSegment = sectorSegments[0].segment;
+    const lastSegment = sectorSegments[sectorSegments.length - 1].segment;
 
     // Extract times from the API structure
     const depTimeVal = firstSegment.source?.localTime;
@@ -72,10 +81,7 @@ const processSector = (sector: any): Leg => {
 
     // Duration is provided in seconds by the API
     const totalDurationSeconds = sector.duration || 0;
-    const durationMins = Math.floor(totalDurationSeconds / 60);
-    const hours = Math.floor(durationMins / 60);
-    const mins = durationMins % 60;
-    const durationText = `${hours}h ${mins}m`;
+    const { text: durationText, minutes: durationMins } = formatDurationFromSeconds(totalDurationSeconds);
 
     let isOvernight = false;
     try {
@@ -96,24 +102,87 @@ const processSector = (sector: any): Leg => {
     const destCity = lastSegment.destination?.station?.city?.name || '';
     const destCode = lastSegment.destination?.station?.code || '';
 
+    // Process detailed segments
+    const segments: Segment[] = sectorSegments.map((ss: any) => {
+        const seg = ss.segment;
+        const segDuration = formatDurationFromSeconds(seg.duration || 0);
+        return {
+            departureTime: formatTime(seg.source?.localTime),
+            arrivalTime: formatTime(seg.destination?.localTime),
+            origin: seg.source?.station?.city?.name || seg.source?.station?.code || '',
+            originCode: seg.source?.station?.code || '',
+            destination: seg.destination?.station?.city?.name || seg.destination?.station?.code || '',
+            destinationCode: seg.destination?.station?.code || '',
+            duration: segDuration.text,
+            durationMinutes: segDuration.minutes,
+            carrier: seg.carrier?.name || seg.carrier?.code || '',
+            carrierCode: seg.carrier?.code || '',
+            flightNumber: `${seg.carrier?.code || ''}${seg.code || ''}`,
+            cabinClass: seg.cabinClass || 'ECONOMY'
+        };
+    });
+
+    // Process layovers (time between segments)
+    const layovers: Layover[] = [];
+    for (let i = 0; i < sectorSegments.length - 1; i++) {
+        const currentSeg = sectorSegments[i];
+        const nextSeg = sectorSegments[i + 1];
+        
+        // Layover info from the current segment's layover property or calculate from times
+        if (currentSeg.layover) {
+            const layoverDuration = formatDurationFromSeconds(currentSeg.layover.duration || 0);
+            layovers.push({
+                airport: currentSeg.segment?.destination?.station?.city?.name || '',
+                airportCode: currentSeg.segment?.destination?.station?.code || '',
+                duration: layoverDuration.text,
+                durationMinutes: layoverDuration.minutes
+            });
+        } else {
+            // Calculate layover from arrival to next departure
+            const arrTime = new Date(currentSeg.segment?.destination?.localTime).getTime();
+            const depTime = new Date(nextSeg.segment?.source?.localTime).getTime();
+            if (!isNaN(arrTime) && !isNaN(depTime)) {
+                const layoverMins = Math.floor((depTime - arrTime) / 60000);
+                const hours = Math.floor(layoverMins / 60);
+                const mins = layoverMins % 60;
+                layovers.push({
+                    airport: currentSeg.segment?.destination?.station?.city?.name || '',
+                    airportCode: currentSeg.segment?.destination?.station?.code || '',
+                    duration: `${hours}h ${mins}m`,
+                    durationMinutes: layoverMins
+                });
+            }
+        }
+    }
+
     // Get stop airports (intermediate destinations)
-    const stopAirports = segments.slice(0, -1).map((s: any) => 
+    const stopAirports = sectorSegments.slice(0, -1).map((s: any) => 
         s.segment?.destination?.station?.city?.name || s.segment?.destination?.station?.code || ''
     );
+
+    // Extract departure and arrival dates (ISO format for filtering)
+    const departureDate = depTimeVal ? depTimeVal.split('T')[0] : undefined;
+    const arrivalDate = arrTimeVal ? arrTimeVal.split('T')[0] : undefined;
 
     return {
         departureTime: formatTime(depTimeVal),
         arrivalTime: formatTime(arrTimeVal),
+        departureDate,
+        arrivalDate,
         duration: durationText,
         durationMinutes: durationMins,
         origin: originCity || originCode,
+        originCode: originCode,
         destination: destCity || destCode,
+        destinationCode: destCode,
         carrier: airlineName, 
         carrierCode: airlineCode,
         carrierLogo: `https://images.kiwi.com/airlines/64/${airlineCode}.png`, 
-        stops: Math.max(0, segments.length - 1),
+        stops: Math.max(0, sectorSegments.length - 1),
         stopAirports,
-        isOvernight
+        isOvernight,
+        segments,
+        layovers
     };
 };
 
@@ -138,7 +207,7 @@ export const searchFlights = async (
             destination: to,
             adults: passengers.toString(),
             cabin_class: flightClass.toUpperCase(),
-            limit: '50',
+            limit: '100', // Increased limit for more variety
             currency: 'USD'
         };
 
@@ -174,15 +243,41 @@ export const searchFlights = async (
 
         const json = await response.json();
         // LOGGING RESPONSE STRUCTURE
-        console.log("[FlightService] Raw JSON:", json);
+        console.log("[FlightService] Raw JSON keys:", Object.keys(json));
+        console.log("[FlightService] Raw JSON itineraries count:", json.itineraries?.length);
+        console.log("[FlightService] First itinerary sample:", JSON.stringify(json.itineraries?.[0], null, 2)?.substring(0, 500));
 
         // Kiwi.com RapidAPI returns data in 'itineraries' array, not 'data'
         const rawData = Array.isArray(json.itineraries) 
             ? json.itineraries 
             : (Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []));
-        console.log(`[FlightService] Found ${rawData.length} flight items`);
+        console.log(`[FlightService] Found ${rawData.length} flight items to process`);
 
-        return rawData.map((item: any) => {
+        // Check if all items have unique IDs
+        const apiIds = rawData.map((item: any) => item.id || item.legacyId || 'no-id');
+        console.log("[FlightService] API IDs:", apiIds);
+        const uniqueApiIds = [...new Set(apiIds)];
+        console.log("[FlightService] Unique API IDs:", uniqueApiIds.length);
+
+        // First pass: deduplicate by API ID (fastest check)
+        const seenApiIds = new Set<string>();
+        const dedupedByApiId = rawData.filter((item: any) => {
+            const apiId = item.id || item.legacyId || '';
+            if (!apiId || seenApiIds.has(apiId)) {
+                console.log(`[FlightService] Filtering out duplicate API ID: ${apiId?.substring(0, 50)}...`);
+                return false;
+            }
+            seenApiIds.add(apiId);
+            return true;
+        });
+        console.log(`[FlightService] After API ID dedup: ${dedupedByApiId.length} items`);
+
+        // Process flights and create unique fingerprints to deduplicate similar flights
+        const seenFlights = new Set<string>();
+        const flights: Flight[] = [];
+
+        for (let i = 0; i < dedupedByApiId.length; i++) {
+            const item = dedupedByApiId[i];
             // Kiwi.com API returns different structures for round-trip vs one-way:
             // - Round-trip: 'outbound' and 'inbound' sector objects
             // - One-way: 'sector' object
@@ -190,22 +285,78 @@ export const searchFlights = async (
             const outboundSector = item.outbound || item.sector;
             const inboundSector = item.inbound;
 
-            // Price is nested in { amount: "43.8055" } format
+            // Create a unique fingerprint for this flight based on actual flight details
+            // This prevents showing duplicate flights even if they have different IDs
+            const outboundSegments = outboundSector?.sectorSegments || [];
+            const inboundSegments = inboundSector?.sectorSegments || [];
+            
+            const outboundFingerprint = outboundSegments.map((s: any) => {
+                const seg = s.segment;
+                return `${seg?.carrier?.code || ''}${seg?.code || ''}-${seg?.source?.localTime || ''}-${seg?.destination?.localTime || ''}`;
+            }).join('|');
+            
+            const inboundFingerprint = inboundSegments.map((s: any) => {
+                const seg = s.segment;
+                return `${seg?.carrier?.code || ''}${seg?.code || ''}-${seg?.source?.localTime || ''}-${seg?.destination?.localTime || ''}`;
+            }).join('|');
+            
             const priceVal = item.price?.amount || item.price || 0;
+            // Round price to nearest dollar for fingerprint to catch near-duplicates
+            const flightFingerprint = `${outboundFingerprint}__${inboundFingerprint}__${Math.round(parseFloat(priceVal))}`;
+            
+            console.log(`[FlightService] Flight ${i} fingerprint: ${flightFingerprint.substring(0, 80)}...`);
+            
+            // Skip if we've already seen this exact flight (same route + similar price)
+            if (seenFlights.has(flightFingerprint)) {
+                console.log(`[FlightService] Skipping duplicate flight: ${flightFingerprint.substring(0, 80)}...`);
+                continue;
+            }
+            seenFlights.add(flightFingerprint);
 
-            // Get currency - API returns USD prices when requested
+            // Price is nested in { amount: "43.8055" } format
             const currency = 'USD';
 
-            return {
-                id: item.id || item.legacyId || `flight-${Date.now()}-${Math.random()}`,
+            // Extract baggage info
+            const bagsInfo = item.bagsInfo || {};
+            const baggageInfo: BaggageInfo = {
+                cabinBag: bagsInfo.includedHandBags || 0,
+                checkedBag: bagsInfo.includedCheckedBags || 0,
+                cabinBagIncluded: bagsInfo.includedHandBags || 0,
+                checkedBagIncluded: bagsInfo.includedCheckedBags || 0,
+                cabinBagPrice: bagsInfo.handBagTiers?.[0]?.tierPrice?.amount 
+                    ? parseFloat(bagsInfo.handBagTiers[0].tierPrice.amount) : undefined,
+                checkedBagPrice: bagsInfo.checkedBagTiers?.[0]?.tierPrice?.amount 
+                    ? parseFloat(bagsInfo.checkedBagTiers[0].tierPrice.amount) : undefined
+            };
+
+            // Extract travel hack info
+            const travelHack = item.travelHack || {};
+            const isSelfTransfer = travelHack.isVirtualInterlining || false;
+            const isVirtualInterlining = travelHack.isVirtualInterlining || false;
+
+            // Extract booking URL
+            const bookingUrl = item.bookingOptions?.edges?.[0]?.node?.bookingUrl || '';
+
+            // Generate a unique ID using the fingerprint hash or API ID
+            const uniqueId = item.id || item.legacyId || `flight-${flightFingerprint.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)}`;
+
+            flights.push({
+                id: uniqueId,
                 price: parseFloat(priceVal),
                 currency: currency,
                 dealRating: 'Good Price',
                 outbound: processSector(outboundSector),
                 inbound: isRoundTrip && inboundSector ? processSector(inboundSector) : undefined,
-                tags: []
-            };
-        });
+                tags: [],
+                baggageInfo,
+                bookingUrl,
+                isSelfTransfer,
+                isVirtualInterlining
+            });
+        }
+
+        console.log(`[FlightService] After deduplication: ${flights.length} unique flights`);
+        return flights;
 
     } catch (error) {
         console.error("Search failed:", error);

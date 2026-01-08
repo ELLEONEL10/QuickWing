@@ -121,6 +121,19 @@ export const SearchResultsPage: React.FC = () => {
         return (hours || 0) * 60 + (minutes || 0);
     };
 
+    // Helper to get day of week (0=Monday, 6=Sunday) from ISO date string or departure time
+    const getDayOfWeek = (dateStr?: string, departureTime?: string): number => {
+        // Try to extract date from various formats
+        if (dateStr) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                // JavaScript getDay() returns 0=Sunday, but we want 0=Monday
+                return (date.getDay() + 6) % 7;
+            }
+        }
+        return -1; // Unknown day
+    };
+
     // Client-side filtering for all sidebar filter options
     const filteredFlights = flights.filter(flight => {
         // 1. Price filter
@@ -178,6 +191,62 @@ export const SearchResultsPage: React.FC = () => {
         if (filters.times?.arrival) {
             const arrMinutes = parseTimeToMinutes(flight.outbound?.arrivalTime);
             if (arrMinutes < filters.times.arrival.start || arrMinutes > filters.times.arrival.end) {
+                return false;
+            }
+        }
+
+        // 7. Bags filter - check if baggage requirements are met
+        if (filters.bags?.cabin > 0) {
+            const cabinIncluded = flight.baggageInfo?.cabinBagIncluded || 0;
+            if (cabinIncluded < filters.bags.cabin) return false;
+        }
+        if (filters.bags?.checked > 0) {
+            const checkedIncluded = flight.baggageInfo?.checkedBagIncluded || 0;
+            if (checkedIncluded < filters.bags.checked) return false;
+        }
+
+        // 8. Self-transfer filter
+        if (!filters.connections?.selfTransfer && flight.isSelfTransfer) {
+            return false;
+        }
+
+        // 9. Stopover duration filter
+        if (filters.stopoverDuration) {
+            const minStopover = filters.stopoverDuration.start;
+            const maxStopover = filters.stopoverDuration.end;
+            
+            // Check outbound layovers
+            const outboundLayovers = flight.outbound?.layovers || [];
+            for (const layover of outboundLayovers) {
+                if (layover.durationMinutes) {
+                    if (layover.durationMinutes < minStopover || layover.durationMinutes > maxStopover) {
+                        return false;
+                    }
+                }
+            }
+            
+            // Check inbound layovers
+            const inboundLayovers = flight.inbound?.layovers || [];
+            for (const layover of inboundLayovers) {
+                if (layover.durationMinutes) {
+                    if (layover.durationMinutes < minStopover || layover.durationMinutes > maxStopover) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // 10. Day of week filter
+        if (filters.days?.departure && filters.days.departure.length > 0) {
+            const depDay = getDayOfWeek(flight.outbound?.departureDate);
+            if (depDay >= 0 && !filters.days.departure.includes(depDay)) {
+                return false;
+            }
+        }
+        
+        if (flight.inbound && filters.days?.return && filters.days.return.length > 0) {
+            const retDay = getDayOfWeek(flight.inbound?.departureDate);
+            if (retDay >= 0 && !filters.days.return.includes(retDay)) {
                 return false;
             }
         }
