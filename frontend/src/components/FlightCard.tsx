@@ -163,11 +163,19 @@ export const FlightCard: React.FC<{ flight: Flight }> = ({ flight }) => {
       {/* Footer Tags */}
       {flight.tags && flight.tags.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex gap-2 overflow-x-auto">
-             {flight.tags.map((tag, i) => (
-                 <span key={i} className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-md whitespace-nowrap">
-                     {tag}
-                 </span>
-             ))}
+             {flight.tags.map((tag, i) => {
+                 // Different colors for different tag types
+                 let tagClass = "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300";
+                 if (tag === 'Cheapest') tagClass = "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400";
+                 if (tag === 'Fastest') tagClass = "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400";
+                 if (tag === 'Best') tagClass = "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400";
+                 
+                 return (
+                     <span key={i} className={`text-[11px] font-bold px-3 py-1 rounded-full whitespace-nowrap ${tagClass}`}>
+                         {tag === 'Cheapest' && '💰 '}{tag === 'Fastest' && '⚡ '}{tag === 'Best' && '⭐ '}{tag}
+                     </span>
+                 );
+             })}
           </div>
       )}
     </div>

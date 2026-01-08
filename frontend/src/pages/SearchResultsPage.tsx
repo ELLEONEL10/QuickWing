@@ -114,42 +114,74 @@ export const SearchResultsPage: React.FC = () => {
         navigate(`/flights?${params.toString()}`);
     };
 
-    // Filter Logic is effectively handled by re-fetching from API in performSearch 
-    // BUT checking the original code, it also did client-side filtering?
-    // The original code did TWO things: it passed filters to API, AND it filtered the results client-side.
-    // Let's bring back the client-side filter logic just in case API filters aren't perfect or to match previous behavior.
-    
+    // Helper to parse time string (HH:MM) to minutes from midnight
+    const parseTimeToMinutes = (timeStr: string): number => {
+        if (!timeStr) return 0;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return (hours || 0) * 60 + (minutes || 0);
+    };
+
+    // Client-side filtering for all sidebar filter options
     const filteredFlights = flights.filter(flight => {
-        // Price check is redundant if API does it, but keeping for safety
+        // 1. Price filter
         if (flight.price > filters.maxPrice) return false;
         
-        // Client-side filtering logic from HomePage.tsx
-        if (!filters.stops.any) {
-            if (filters.stops.direct && flight.outbound.stops > 0) return false;
-            if (filters.stops.upTo1 && flight.outbound.stops > 1) return false;
-            if (filters.stops.upTo2 && flight.outbound.stops > 2) return false;
+        // 2. Stops filter - check if any stop option is selected
+        const hasStopFilter = filters.stops.direct || filters.stops.upTo1 || filters.stops.upTo2;
+        if (hasStopFilter) {
+            const outboundStops = flight.outbound?.stops || 0;
+            const inboundStops = flight.inbound?.stops || 0;
+            const maxStops = Math.max(outboundStops, inboundStops);
+            
+            let passesStopFilter = false;
+            if (filters.stops.direct && maxStops === 0) passesStopFilter = true;
+            if (filters.stops.upTo1 && maxStops <= 1) passesStopFilter = true;
+            if (filters.stops.upTo2 && maxStops <= 2) passesStopFilter = true;
+            
+            if (!passesStopFilter) return false;
         }
 
+        // 3. Carrier/Airline filter
         if (filters.carriers.length > 0) {
-            const outboundCarrier = flight.outbound.carrier;
-            const isIncluded = filters.carriers.some(c => outboundCarrier.includes(c));
-            const inboundIncluded = flight.inbound ? filters.carriers.some(c => flight.inbound.carrier.includes(c)) : true;
-            if (!isIncluded && !inboundIncluded) return false;
+            const outboundCarrier = flight.outbound?.carrier || '';
+            const outboundCode = flight.outbound?.carrierCode || '';
+            const inboundCarrier = flight.inbound?.carrier || '';
+            const inboundCode = flight.inbound?.carrierCode || '';
+            
+            const matchesCarrier = filters.carriers.some(c => 
+                outboundCarrier.toLowerCase().includes(c.toLowerCase()) ||
+                outboundCode.toLowerCase() === c.toLowerCase() ||
+                inboundCarrier.toLowerCase().includes(c.toLowerCase()) ||
+                inboundCode.toLowerCase() === c.toLowerCase()
+            );
+            
+            if (!matchesCarrier) return false;
         }
 
+        // 4. Max duration filter (in minutes)
         if (filters.maxDuration) {
-            if (flight.outbound.durationMinutes > filters.maxDuration) return false;
-            if (flight.inbound && flight.inbound.durationMinutes > filters.maxDuration) return false;
+            const outboundDuration = flight.outbound?.durationMinutes || 0;
+            const inboundDuration = flight.inbound?.durationMinutes || 0;
+            if (outboundDuration > filters.maxDuration) return false;
+            if (flight.inbound && inboundDuration > filters.maxDuration) return false;
         }
 
-        if (filters.times?.departure?.start > 0) {
-            // Simple parsing assuming HH:MM format
-            const [hours, minutes] = flight.outbound.departureTime.split(':').map(Number);
-            const flightMinutes = (hours || 0) * 60 + (minutes || 0);
-            if (flightMinutes < filters.times.departure.start) return false;
+        // 5. Departure time filter
+        if (filters.times?.departure) {
+            const depMinutes = parseTimeToMinutes(flight.outbound?.departureTime);
+            if (depMinutes < filters.times.departure.start || depMinutes > filters.times.departure.end) {
+                return false;
+            }
         }
-        
-        // ... other client side filters omitted for brevity if they duplicate API logic or were complex
+
+        // 6. Arrival time filter
+        if (filters.times?.arrival) {
+            const arrMinutes = parseTimeToMinutes(flight.outbound?.arrivalTime);
+            if (arrMinutes < filters.times.arrival.start || arrMinutes > filters.times.arrival.end) {
+                return false;
+            }
+        }
+
         return true;
     });
 
