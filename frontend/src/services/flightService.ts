@@ -1,60 +1,124 @@
 import { Flight, Leg, FilterState } from '../types';
 import { API_URL } from '../config';
 
-const mapSector = (sector: any): Leg => {
-  if (!sector || !sector.sectorSegments || sector.sectorSegments.length === 0) {
-      // Fallback or empty leg
-      return {
-          departureTime: '',
-          arrivalTime: '',
-          duration: '',
-          durationMinutes: 0,
-          origin: '',
-          destination: '',
-          carrier: '',
-          stops: 0,
-          stopAirports: [],
-          isOvernight: false
-      };
-  }
-  const segments = sector.sectorSegments;
-  const firstSegment = segments[0].segment;
-  const lastSegment = segments[segments.length - 1].segment;
-
-  // Calculate total duration from sector duration (seconds)
-  const totalSeconds = sector.duration;
-  const durationHours = Math.floor(totalSeconds / 3600);
-  const durationMinutes = Math.floor((totalSeconds % 3600) / 60);
-
-  const depDate = new Date(firstSegment.source.localTime);
-  const arrDate = new Date(lastSegment.destination.localTime);
-  const isOvernight = arrDate.getDate() !== depDate.getDate();
-
-  return {
-      departureTime: depDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      arrivalTime: arrDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      duration: `${durationHours}h ${durationMinutes}m`,
-      durationMinutes: Math.floor(totalSeconds / 60),
-      origin: firstSegment.source.station?.city?.name || firstSegment.source.station?.name || 'Unknown', 
-      destination: lastSegment.destination.station?.city?.name || lastSegment.destination.station?.name || 'Unknown',
-      carrier: firstSegment.carrier.name, 
-      carrierCode: firstSegment.carrier.code,
-      carrierLogo: firstSegment.carrier.name, 
-      stops: segments.length - 1,
-      stopAirports: segments.slice(0, -1).map((s: any) => s.segment.destination.station?.city?.name || s.segment.destination.station?.name || ''),
-      isOvernight: isOvernight
-  };
-};
-
-const formatDateForApi = (isoDate: string): string => {
-    if (!isoDate) return '';
-    // Expecting YYYY-MM-DD
-    const parts = isoDate.split('-');
-    if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+const formatTime = (dateInput: string | number) => {
+    if (!dateInput) return '';
+    try {
+        let date: Date;
+        // Handle Unix timestamp (seconds)
+        if (typeof dateInput === 'number') {
+            date = new Date(dateInput * 1000);
+        } else {
+            date = new Date(dateInput);
+        }
+        
+        if (isNaN(date.getTime())) return String(dateInput); 
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch (e) {
+        return '';
     }
-    return isoDate;
 };
+
+const calculateDuration = (start: string | number, end: string | number): { text: string; minutes: number } => {
+    try {
+        let startTime: number;
+        let endTime: number;
+
+        if (typeof start === 'number') startTime = start * 1000;
+        else startTime = new Date(start).getTime();
+
+        if (typeof end === 'number') endTime = end * 1000;
+        else endTime = new Date(end).getTime();
+
+        if (isNaN(startTime) || isNaN(endTime)) return { text: 'N/A', minutes: 0 };
+        
+        const diffMs = endTime - startTime;
+        const minutes = Math.floor(diffMs / 60000);
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return { text: `${hours}h ${mins}m`, minutes };
+    } catch (e) {
+        return { text: '', minutes: 0 };
+    }
+};
+
+/**
+ * Process a sector (outbound or inbound) from the Kiwi.com API response.
+ * The API returns sectorSegments array where each item has a 'segment' object.
+ */
+const processSector = (sector: any): Leg => {
+    if (!sector || !sector.sectorSegments || sector.sectorSegments.length === 0) {
+        return {
+            departureTime: '',
+            arrivalTime: '',
+            duration: '',
+            durationMinutes: 0,
+            origin: '',
+            destination: '',
+            carrier: '',
+            stops: 0,
+            stopAirports: [],
+            isOvernight: false
+        } as Leg;
+    }
+
+    const segments = sector.sectorSegments;
+    const firstSegment = segments[0].segment;
+    const lastSegment = segments[segments.length - 1].segment;
+
+    // Extract times from the API structure
+    const depTimeVal = firstSegment.source?.localTime;
+    const arrTimeVal = lastSegment.destination?.localTime;
+
+    // Duration is provided in seconds by the API
+    const totalDurationSeconds = sector.duration || 0;
+    const durationMins = Math.floor(totalDurationSeconds / 60);
+    const hours = Math.floor(durationMins / 60);
+    const mins = durationMins % 60;
+    const durationText = `${hours}h ${mins}m`;
+
+    let isOvernight = false;
+    try {
+        if (depTimeVal && arrTimeVal) {
+            const dDate = new Date(depTimeVal);
+            const aDate = new Date(arrTimeVal);
+            isOvernight = aDate.getDate() !== dDate.getDate();
+        }
+    } catch (e) { /* ignore */ }
+
+    // Airline info from carrier object
+    const airlineCode = firstSegment.carrier?.code || '??';
+    const airlineName = firstSegment.carrier?.name || airlineCode;
+
+    // Extract city/airport info
+    const originCity = firstSegment.source?.station?.city?.name || '';
+    const originCode = firstSegment.source?.station?.code || '';
+    const destCity = lastSegment.destination?.station?.city?.name || '';
+    const destCode = lastSegment.destination?.station?.code || '';
+
+    // Get stop airports (intermediate destinations)
+    const stopAirports = segments.slice(0, -1).map((s: any) => 
+        s.segment?.destination?.station?.city?.name || s.segment?.destination?.station?.code || ''
+    );
+
+    return {
+        departureTime: formatTime(depTimeVal),
+        arrivalTime: formatTime(arrTimeVal),
+        duration: durationText,
+        durationMinutes: durationMins,
+        origin: originCity || originCode,
+        destination: destCity || destCode,
+        carrier: airlineName, 
+        carrierCode: airlineCode,
+        carrierLogo: `https://images.kiwi.com/airlines/64/${airlineCode}.png`, 
+        stops: Math.max(0, segments.length - 1),
+        stopAirports,
+        isOvernight
+    };
+};
+
+// Keep the old function name as an alias for backward compatibility
+const processLeg = processSector;
 
 export const searchFlights = async (
     from: string, 
@@ -66,7 +130,10 @@ export const searchFlights = async (
     filters?: FilterState 
 ): Promise<Flight[]> => {
     try {
-        const params: Record<string, string> = {
+        const isRoundTrip = !!returnDate;
+        const endpoint = isRoundTrip ? '/flights/search/round-trip' : '/flights/search/one-way';
+        
+        const params: any = {
             source: from,
             destination: to,
             adults: passengers.toString(),
@@ -75,91 +142,73 @@ export const searchFlights = async (
             currency: 'USD'
         };
 
-        const isRoundTrip = !!returnDate;
-
         if (departureDate) {
-            const formattedDep = formatDateForApi(departureDate);
             if (isRoundTrip) {
-                params.outbound_department_date_start = formattedDep;
-                params.outbound_department_date_end = formattedDep;
+                params.outbound_department_date_start = departureDate;
+                params.outbound_department_date_end = departureDate;
             } else {
-                params.departure_date_start = formattedDep;
-                params.departure_date_end = formattedDep;
+                params.departure_date_start = departureDate;
+                params.departure_date_end = departureDate;
             }
         }
 
-        if (returnDate) {
-            const formattedRet = formatDateForApi(returnDate);
-            params.inbound_departure_date_start = formattedRet;
-            params.inbound_departure_date_end = formattedRet;
+        if (isRoundTrip && returnDate) {
+            params.inbound_departure_date_start = returnDate;
+            params.inbound_departure_date_end = returnDate;
         }
 
         if (filters) {
-            if (filters.maxPrice) {
-                params.price_end = filters.maxPrice.toString();
-            }
-
-            if (filters.stops && !filters.stops.any) {
-                if (filters.stops.direct) params.max_stops_count = '0';
-                else if (filters.stops.upTo1) params.max_stops_count = '1';
-                else if (filters.stops.upTo2) params.max_stops_count = '2';
-            }
-
-            if (filters.stops && !filters.stops.allowOvernight) {
-                params.allow_overnight_stopover = 'false';
-            }
-
-            if (filters.bags && filters.bags.cabin > 0) {
-                params.handbags = '1';
-            }
-            if (filters.bags && filters.bags.checked > 0) {
-                params.holdbags = '1';
-            }
-
-            if (filters.connections) {
-                params.enable_self_transfer = filters.connections.selfTransfer ? 'true' : 'false';
-            }
-
-            if (filters.travelHacks) {
-                params.enable_throw_away_ticketing = filters.travelHacks.throwawayTicketing ? 'true' : 'false';
-                params.enable_true_hidden_city = filters.travelHacks.hiddenCities ? 'true' : 'false';
-            }
+            if (filters.maxPrice) params.price_end = filters.maxPrice;
         }
 
-        const queryParams = new URLSearchParams(params);
-        const endpoint = isRoundTrip ? '/flights/search/round-trip' : '/flights/search/one-way';
-
-        const response = await fetch(`${API_URL}${endpoint}?${queryParams}`, {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
+        const queryString = new URLSearchParams(params).toString();
+        // LOGGING REQUEST
+        console.log(`[FlightService] Fetching: ${API_URL}${endpoint}?${queryString}`);
+        
+        const response = await fetch(`${API_URL}${endpoint}?${queryString}`);
 
         if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+            console.error(`[FlightService] API Error: ${response.status} ${response.statusText}`);
+            throw new Error('Network response was not ok');
         }
 
-        const data = await response.json();
-        
-        // Handle the new API structure which uses 'itineraries'
-        if (!data.itineraries || !Array.isArray(data.itineraries)) {
-            // Check if it's the old structure? Or just log and return empty
-            console.warn("Unexpected API response structure", data);
-            return [];
-        }
+        const json = await response.json();
+        // LOGGING RESPONSE STRUCTURE
+        console.log("[FlightService] Raw JSON:", json);
 
-        return data.itineraries.map((item: any) => ({
-            id: item.id,
-            price: parseFloat(item.price.amount),
-            currency: item.price.currency || "USD",
-            dealRating: "Good Price", 
-            outbound: mapSector(item.outbound),
-            inbound: item.inbound ? mapSector(item.inbound) : (isRoundTrip ? mapSector(item.outbound) : undefined), // Fallback to outbound if inbound missing in roundtrip (unlikely but safe)
-            tags: []
-        }));
+        // Kiwi.com RapidAPI returns data in 'itineraries' array, not 'data'
+        const rawData = Array.isArray(json.itineraries) 
+            ? json.itineraries 
+            : (Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []));
+        console.log(`[FlightService] Found ${rawData.length} flight items`);
+
+        return rawData.map((item: any) => {
+            // Kiwi.com API returns different structures for round-trip vs one-way:
+            // - Round-trip: 'outbound' and 'inbound' sector objects
+            // - One-way: 'sector' object
+            // Each sector has 'sectorSegments' array with flight segments
+            const outboundSector = item.outbound || item.sector;
+            const inboundSector = item.inbound;
+
+            // Price is nested in { amount: "43.8055" } format
+            const priceVal = item.price?.amount || item.price || 0;
+
+            // Get currency - API returns USD prices when requested
+            const currency = 'USD';
+
+            return {
+                id: item.id || item.legacyId || `flight-${Date.now()}-${Math.random()}`,
+                price: parseFloat(priceVal),
+                currency: currency,
+                dealRating: 'Good Price',
+                outbound: processSector(outboundSector),
+                inbound: isRoundTrip && inboundSector ? processSector(inboundSector) : undefined,
+                tags: []
+            };
+        });
 
     } catch (error) {
-        console.error("Failed to fetch flights", error);
+        console.error("Search failed:", error);
         return [];
     }
 };
