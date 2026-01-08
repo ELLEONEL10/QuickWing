@@ -51,7 +51,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading, initi
   const [flightClass, setFlightClass] = useState(initialValues?.flightClass || 'economy');
   const [showPassengers, setShowPassengers] = useState(false);
   const [showClass, setShowClass] = useState(false);
-  const [isReturnTrip, setIsReturnTrip] = useState(!!initialValues?.returnDate || true);
+  const [isReturnTrip, setIsReturnTrip] = useState(initialValues?.returnDate ? true : true);
   
   // Date states
   const [departureDate, setDepartureDate] = useState(initialValues?.departureDate || new Date().toISOString().split('T')[0]);
