@@ -25,7 +25,7 @@ export const Header: React.FC = () => {
       <div className="flex items-center justify-between">
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <img src={theme === 'dark' ? "/logo-dark.png" : "/Logo.png"} alt="QuikWing" className="h-10 w-auto object-contain" />
+          <img src={theme === 'dark' ? "/logo-dark.png" : "/logo.png"} alt="QuikWing" className="h-10 w-auto object-contain" />
         </Link>
         
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
