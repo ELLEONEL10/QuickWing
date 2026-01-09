@@ -158,13 +158,15 @@ npm run dev
 http://localhost:5173
 
 👥 Team
-==============
+===
 Fadi Abbara
+===
 Anas Zahran
+===
 Miras
+===
 Danylo
-==============
-
+===
 📄 License
 This project is licensed under the MIT License.
 See the LICENSE file for details.
