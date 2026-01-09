@@ -69,7 +69,7 @@ All services are containerized using **Docker Compose** for consistency across e
 ---
 
 ## 📁 Project Structure
-
+```
 quickwing/
 │
 ├── backend/
@@ -94,7 +94,7 @@ quickwing/
 │
 ├── LICENSE
 └── README.md
-
+```
 
 ---
 
@@ -113,40 +113,47 @@ Ensure you have:
 
 ## 1️⃣ Clone the Repository
 
-```bash
+```
 git clone https://github.com/elleonel10/quickwing.git
 cd quickwing
+```
 2️⃣ Backend Setup
-bash
-Copy code
-cd backend
 
+```
+cd backend
+```
 # Run setup script
+```
 python setup.py local
+```
 Configure Environment Variables
 Edit .env or src/.env:
 
 env
-Copy code
+```
 RAPIDAPI_KEY=your_rapidapi_key_here
 RAPIDAPI_HOST=kiwi-com-cheap-flights.p.rapidapi.com
+```
 Start Backend Services
-bash
-Copy code
+```
 docker compose up
+```
 📌 API Documentation:
 http://127.0.0.1:8000/docs
 
 3️⃣ Frontend Setup
-bash
-Copy code
+```
 cd frontend
-
+```
 # Install dependencies
-npm install
 
+```
+npm install
+```
 # Run development server
+```
 npm run dev
+```
 📌 Frontend URL:
 http://localhost:5173
 
