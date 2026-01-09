@@ -158,16 +158,12 @@ npm run dev
 http://localhost:5173
 
 👥 Team
+==============
 Fadi Abbara
-
 Anas Zahran
-
 Miras
-
 Danylo
-
-🎓 Supervisor
-Prof. Ali Mehmood Khan
+==============
 
 📄 License
 This project is licensed under the MIT License.
