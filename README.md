@@ -43,8 +43,6 @@ Backend (FastAPI)
 ├── Redis (Cache)
 └── Celery / Arq (Background Tasks)
 
-markdown
-Copy code
 
 All services are containerized using **Docker Compose** for consistency across environments.
 
@@ -97,8 +95,6 @@ quickwing/
 ├── LICENSE
 └── README.md
 
-yaml
-Copy code
 
 ---
 
