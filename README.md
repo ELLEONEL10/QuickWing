@@ -1,117 +1,160 @@
-QuickWing ✈️
+# ✈️ QuickWing — Modern Flight Booking Platform
 
-A Modern Flight Booking Platform designed for speed, reliability, and user experience.
+![React](https://img.shields.io/badge/React-19-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python-green)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Active-success)
 
-🌐 Live Demo
+**QuickWing** is a full-stack flight booking platform designed for **speed, scalability, and a seamless user experience**.  
+It combines a modern **React + TypeScript frontend** with a **FastAPI backend**, powered by real-time flight data and deployed using Docker.
 
-quikwing.vercel.app
+🔗 **Live Demo:** https://quikwing.vercel.app
 
-📖 About The Project
+---
 
-QuickWing is a full-stack flight booking application that separates the user interface from business logic using a decoupled architecture. It features a responsive React frontend and a high-performance Python FastAPI backend, containerized with Docker for consistent deployment.
+## 🚀 Features
 
-Key Features
+- ✈️ **Real-Time Flight Search**  
+  Live flight data via RapidAPI (Kiwi.com)
 
-Real-time Flight Search: Integration with RapidAPI (Kiwi.com) for live flight data.
 
-User Authentication: Secure login and registration.
+- 📑 **Booking Management**  
+  Book flights and view booking history
 
-Booking Management: Users can book flights and view their history.
 
-Tiered Access: Different user tiers for exclusive benefits.
+- ⚡ **High Performance**  
+  Redis caching & async database operations
 
-Admin Dashboard: For managing flights, users, and bookings.
+---
 
-🛠️ Tech Stack
+## 🧠 Architecture Overview
 
-Frontend
+QuickWing follows a **decoupled, scalable architecture**:
 
-Framework: React (v19)
+Frontend (React + Vite)
+|
+| REST API
+v
+Backend (FastAPI)
+|
+├── PostgreSQL (Database)
+├── Redis (Cache)
+└── Celery / Arq (Background Tasks)
 
-Build Tool: Vite (v6)
+markdown
+Copy code
 
-Language: TypeScript
+All services are containerized using **Docker Compose** for consistency across environments.
 
-Styling: CSS Modules / Animations
+---
 
-Icons: Lucide React
+## 🛠️ Tech Stack
 
-AI Integration: Google GenAI SDK
+### Frontend
+- **Framework:** React v19
+- **Build Tool:** Vite v6
+- **Language:** TypeScript
+- **Styling:** CSS Modules & Animations
+- **Icons:** Lucide React
+- **AI:** Google GenAI SDK
 
-Backend
+### Backend
+- **Framework:** FastAPI (Python 3.10+)
+- **Server:** Uvicorn / Gunicorn
+- **Database:** PostgreSQL (SQLAlchemy + AsyncPG)
+- **Caching:** Redis
+- **Task Queue:** Celery / Arq
+- **Containerization:** Docker & Docker Compose
 
-Framework: FastAPI (Python 3.10+)
+---
 
-Server: Uvicorn / Gunicorn
+## 📁 Project Structure
 
-Database: PostgreSQL (via SQLAlchemy & AsyncPG)
+quickwing/
+│
+├── backend/
+│ ├── src/
+│ │ ├── api/
+│ │ ├── core/
+│ │ ├── models/
+│ │ ├── services/
+│ │ └── main.py
+│ ├── docker-compose.yml
+│ ├── setup.py
+│ └── .env
+│
+├── frontend/
+│ ├── src/
+│ │ ├── components/
+│ │ ├── pages/
+│ │ ├── hooks/
+│ │ └── main.tsx
+│ ├── vite.config.ts
+│ └── package.json
+│
+├── LICENSE
+└── README.md
 
-Caching: Redis
+yaml
+Copy code
 
-Task Queue: Celery / Arq
+---
 
-Containerization: Docker & Docker Compose
+## 🚀 Getting Started
 
-🚀 Getting Started
+### ✅ Prerequisites
 
-Follow these instructions to set up the project locally on your machine.
+Ensure you have:
 
-Prerequisites
+- Docker Desktop
+- Node.js v18+
+- Python v3.10+
+- Git
 
-Ensure you have the following installed:
+---
 
-Docker Desktop
+## 1️⃣ Clone the Repository
 
-Node.js (v18+)
-
-Python (v3.10+)
-
-Git
-
-1. Clone the Repository
-
-git clone [https://github.com/elleonel10/quickwing.git](https://github.com/elleonel10/quickwing.git)
+```bash
+git clone https://github.com/elleonel10/quickwing.git
 cd quickwing
-
-
-2. Backend Setup
-
-The backend utilizes a custom setup script for easy configuration.
-
+2️⃣ Backend Setup
+bash
+Copy code
 cd backend
 
-# 1. Run the setup script for local development
+# Run setup script
 python setup.py local
+Configure Environment Variables
+Edit .env or src/.env:
 
-# 2. Configure Environment Variables
-# Open the newly created .env file and add your API keys:
-# RAPIDAPI_KEY=9116e9e0c4msh9fbf18d4b0d0295p1a6c68jsn578dc2de4695
-# RAPIDAPI_HOST=kiwi-com-cheap-flights.p.rapidapi.com
-
-# 3. Start the Backend Services (API + DB + Redis)
+env
+Copy code
+RAPIDAPI_KEY=your_rapidapi_key_here
+RAPIDAPI_HOST=kiwi-com-cheap-flights.p.rapidapi.com
+Start Backend Services
+bash
+Copy code
 docker compose up
+📌 API Documentation:
+http://127.0.0.1:8000/docs
 
-
-Note: The API will be available at http://127.0.0.1:8000/docs
-
-3. Frontend Setup
-
-The frontend uses Vite for a fast development experience.
-
-# Open a new terminal and navigate to the frontend directory
+3️⃣ Frontend Setup
+bash
+Copy code
 cd frontend
 
-# 1. Install Dependencies
+# Install dependencies
 npm install
 
-# 2. Run the Development Server
+# Run development server
 npm run dev
+📌 Frontend URL:
+http://localhost:5173
 
-
-Note: The application will be running at http://localhost:5173
-
-👥 Team Members
-
+👥 Team
 Fadi Abbara
 
 Anas Zahran
@@ -121,9 +164,11 @@ Miras
 Danylo
 
 🎓 Supervisor
-
 Prof. Ali Mehmood Khan
 
 📄 License
+This project is licensed under the MIT License.
+See the LICENSE file for details.
 
-This project is licensed under the MIT License
+⭐ Support
+If you find this project useful, please consider giving it a ⭐ on GitHub.
